@@ -1,0 +1,3625 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+<meta name="theme-color" content="#0b0f19">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<title>Remote Touchpad</title>
+
+<style id="theme-style">
+/* =========================================================
+   RESET
+========================================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg-primary: #0b0f19;
+  --bg-secondary: #111827;
+  --bg-tertiary: #182235;
+  --border: #26344d;
+
+  --accent: #6366f1;
+  --accent-secondary: #22c55e;
+
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+
+  --touch-primary: rgba(99, 102, 241, 0.35);
+  --touch-secondary: rgba(34, 197, 94, 0.35);
+
+  --touch-border-primary: #818cf8;
+  --touch-border-secondary: #4ade80;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  background:
+    radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--bg-secondary) 90%, transparent),
+      var(--bg-primary) 65%
+    );
+
+  color: var(--text);
+
+  min-height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  touch-action: none;
+
+  overscroll-behavior: none;
+
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+header {
+  flex: 0 0 auto;
+
+  padding:
+    calc(10px + var(--safe-top))
+    14px
+    10px
+    14px;
+
+  min-height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  background:
+    color-mix(in srgb, var(--bg-secondary) 94%, transparent);
+
+  border-bottom: 1px solid var(--border);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  z-index: 20;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--accent),
+      color-mix(in srgb, var(--accent) 55%, #000)
+    );
+
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--accent) 25%, transparent);
+
+  font-size: 19px;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.brand-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.15;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+
+  font-size: 0.68rem;
+  color: var(--text-muted);
+
+  white-space: nowrap;
+}
+
+.status {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 7px 10px;
+
+  border-radius: 999px;
+
+  background: color-mix(
+    in srgb,
+    var(--bg-tertiary) 90%,
+    transparent
+  );
+
+  border: 1px solid var(--border);
+
+  color: var(--text-muted);
+
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: var(--text-muted);
+
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
+
+.status.connected {
+  color: var(--accent-secondary);
+}
+
+.status.connected .status-dot {
+  background: var(--accent-secondary);
+
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+
+  animation: pulse-status 2s infinite;
+}
+
+.status.connecting {
+  color: #fbbf24;
+}
+
+.status.connecting .status-dot {
+  background: #fbbf24;
+}
+
+@keyframes pulse-status {
+  0%, 100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+main {
+  position: relative;
+
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+/* =========================================================
+   TOUCHPAD
+========================================================= */
+
+#touchpad {
+  position: relative;
+
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  margin: 10px;
+
+  border-radius: var(--radius-lg);
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--bg-secondary) 98%, transparent),
+      color-mix(in srgb, var(--bg-primary) 96%, transparent)
+    );
+
+  border: 1px solid var(--border);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 10px 35px rgba(0,0,0,.18);
+
+  touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* subtle touchpad grid */
+
+#touchpad::before {
+  content: "";
+
+  position: absolute;
+  inset: 14px;
+
+  border: 1px dashed
+    color-mix(in srgb, var(--border) 85%, transparent);
+
+  border-radius: 14px;
+
+  pointer-events: none;
+
+  opacity: 0.8;
+}
+
+/* center logo/hint */
+
+#touchpad::after {
+  content: "TOUCHPAD";
+
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  font-size: 0.65rem;
+  font-weight: 700;
+
+  letter-spacing: 0.25em;
+
+  color: color-mix(
+    in srgb,
+    var(--text-muted) 18%,
+    transparent
+  );
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   TOUCH INDICATOR
+========================================================= */
+
+.touch-indicator {
+  position: absolute;
+
+  width: 30px;
+  height: 30px;
+
+  border-radius: 50%;
+
+  background: var(--touch-primary);
+
+  border: 2px solid var(--touch-border-primary);
+
+  box-shadow:
+    0 0 0 7px
+      color-mix(
+        in srgb,
+        var(--touch-border-primary) 8%,
+        transparent
+      ),
+    0 4px 18px
+      color-mix(
+        in srgb,
+        var(--touch-border-primary) 25%,
+        transparent
+      );
+
+  pointer-events: none;
+
+  transform: translate(-50%, -50%);
+
+  z-index: 10;
+
+  animation: touch-pop .12s ease-out;
+}
+
+.touch-indicator.secondary {
+  background: var(--touch-secondary);
+  border-color: var(--touch-border-secondary);
+
+  box-shadow:
+    0 0 0 7px
+      color-mix(
+        in srgb,
+        var(--touch-border-secondary) 8%,
+        transparent
+      );
+}
+
+@keyframes touch-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.65);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* =========================================================
+   GESTURE HINT
+========================================================= */
+
+.gesture-hint {
+  position: absolute;
+
+  left: 50%;
+  bottom: 18px;
+
+  transform: translateX(-50%);
+
+  width: calc(100% - 32px);
+  max-width: 560px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-secondary) 92%,
+      transparent
+    );
+
+  border: 1px solid
+    color-mix(in srgb, var(--border) 90%, transparent);
+
+  border-radius: 999px;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  font-size: 0.62rem;
+
+  color: var(--text-muted);
+
+  pointer-events: none;
+
+  z-index: 5;
+
+  transition:
+    opacity .3s ease,
+    transform .3s ease;
+}
+
+.gesture-hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gesture-hint kbd {
+  padding: 2px 6px;
+
+  border-radius: 5px;
+
+  background:
+    color-mix(in srgb, var(--accent) 14%, var(--bg-tertiary));
+
+  color: var(--text);
+
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+/* =========================================================
+   BOTTOM CONTROLS
+========================================================= */
+
+.bottom-bar {
+  flex: 0 0 auto;
+
+  display: grid;
+
+  grid-template-columns: 1fr auto 1fr;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding:
+    8px
+    10px
+    calc(8px + var(--safe-bottom))
+    10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-secondary) 96%,
+      transparent
+    );
+
+  border-top: 1px solid var(--border);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  z-index: 20;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.control-group.left {
+  justify-content: flex-start;
+}
+
+.control-group.center {
+  justify-content: center;
+}
+
+.control-group.right {
+  justify-content: flex-end;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.btn {
+  min-width: 42px;
+  min-height: 42px;
+
+  padding: 8px 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 12px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-tertiary) 94%,
+      transparent
+    );
+
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  touch-action: manipulation;
+
+  transition:
+    transform .12s ease,
+    background .15s ease,
+    border-color .15s ease;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.btn:active {
+  transform: scale(.94);
+}
+
+.btn:hover {
+  background:
+    color-mix(
+      in srgb,
+      var(--accent) 12%,
+      var(--bg-tertiary)
+    );
+}
+
+.btn.primary {
+  background: var(--accent);
+
+  border-color: var(--accent);
+
+  color: white;
+
+  box-shadow:
+    0 7px 20px
+      color-mix(
+        in srgb,
+        var(--accent) 22%,
+        transparent
+      );
+}
+
+.btn.secondary {
+  background:
+    color-mix(
+      in srgb,
+      var(--accent-secondary) 12%,
+      var(--bg-tertiary)
+    );
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent-secondary) 35%,
+      var(--border)
+    );
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-label {
+  white-space: nowrap;
+}
+
+/* =========================================================
+   SENSITIVITY
+========================================================= */
+
+.sensitivity-control {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  min-width: 0;
+
+  padding: 0 8px;
+}
+
+.sensitivity-icon {
+  font-size: .95rem;
+}
+
+.slider-wrap {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 90px;
+  width: min(180px, 24vw);
+}
+
+.slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: .58rem;
+
+  color: var(--text-muted);
+}
+
+.setting-value {
+  color: var(--text);
+
+  font-weight: 700;
+}
+
+input[type="range"] {
+  width: 100%;
+
+  height: 4px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border-radius: 99px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--border) 90%,
+      transparent
+    );
+
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+
+  background: var(--accent);
+
+  border: 3px solid var(--bg-secondary);
+
+  box-shadow: 0 0 0 1px var(--accent);
+
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+
+  background: var(--accent);
+
+  border: 3px solid var(--bg-secondary);
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   SETTINGS SHEET
+========================================================= */
+
+.sheet-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(0,0,0,.58);
+
+  opacity: 0;
+
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transition:
+    opacity .25s ease,
+    visibility .25s ease;
+
+  z-index: 90;
+}
+
+.sheet-overlay.visible {
+  opacity: 1;
+
+  visibility: visible;
+
+  pointer-events: auto;
+}
+
+.bottom-sheet {
+  position: fixed;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  max-height: min(82dvh, 680px);
+
+  overflow-y: auto;
+
+  padding:
+    10px
+    16px
+    calc(20px + var(--safe-bottom));
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-secondary) 98%,
+      transparent
+    );
+
+  border-top:
+    1px solid var(--border);
+
+  border-radius:
+    24px 24px 0 0;
+
+  box-shadow:
+    0 -20px 60px rgba(0,0,0,.35);
+
+  transform: translateY(105%);
+
+  transition:
+    transform .28s cubic-bezier(.2,.8,.2,1);
+
+  z-index: 100;
+
+  overscroll-behavior: contain;
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 42px;
+  height: 4px;
+
+  border-radius: 99px;
+
+  background: var(--border);
+
+  margin: 2px auto 16px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 18px;
+}
+
+.sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sheet-description {
+  margin-top: 3px;
+
+  font-size: .7rem;
+
+  color: var(--text-muted);
+}
+
+.sheet-section {
+  padding: 14px 0;
+
+  border-top: 1px solid
+    color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.sheet-section:first-of-type {
+  border-top: none;
+}
+
+.sheet-section-title {
+  margin-bottom: 10px;
+
+  font-size: .7rem;
+  font-weight: 700;
+
+  color: var(--text-muted);
+
+  text-transform: uppercase;
+
+  letter-spacing: .08em;
+}
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+#keyboard-drawer {
+  position: fixed;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100%;
+
+  max-height: min(66dvh, 620px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding:
+    10px
+    8px
+    calc(12px + var(--safe-bottom));
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-secondary) 98%,
+      transparent
+    );
+
+  border-top: 1px solid var(--border);
+
+  border-radius: 22px 22px 0 0;
+
+  box-shadow:
+    0 -20px 55px rgba(0,0,0,.4);
+
+  transform: translateY(105%);
+
+  transition:
+    transform .28s cubic-bezier(.2,.8,.2,1);
+
+  z-index: 110;
+
+  overscroll-behavior: contain;
+
+  touch-action: pan-y;
+}
+
+#keyboard-drawer.open {
+  transform: translateY(0);
+}
+
+.keyboard-header {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding:
+    2px
+    4px
+    10px;
+
+  margin-bottom: 4px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-secondary) 98%,
+      transparent
+    );
+}
+
+.keyboard-title {
+  font-size: .75rem;
+
+  font-weight: 700;
+
+  color: var(--text-muted);
+}
+
+.keyboard-close {
+  width: 34px;
+  height: 34px;
+
+  padding: 0;
+
+  border-radius: 10px;
+}
+
+/* Keyboard rows */
+
+.keyboard-row {
+  width: 100%;
+
+  display: flex;
+
+  gap: 5px;
+
+  margin-bottom: 6px;
+
+  justify-content: center;
+
+  align-items: stretch;
+}
+
+.key {
+  flex:
+    1 1 0;
+
+  min-width: 0;
+
+  min-height: 44px;
+
+  padding: 8px 5px;
+
+  border:
+    1px solid
+    color-mix(in srgb, var(--border) 95%, transparent);
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--bg-tertiary) 100%,
+        transparent
+      ),
+      color-mix(
+        in srgb,
+        var(--bg-primary) 80%,
+        var(--bg-tertiary)
+      )
+    );
+
+  color: var(--text);
+
+  font-family: inherit;
+
+  font-size: .78rem;
+
+  font-weight: 600;
+
+  line-height: 1;
+
+  box-shadow:
+    0 2px 0
+      color-mix(
+        in srgb,
+        var(--border) 80%,
+        transparent
+      );
+
+  touch-action: manipulation;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  transition:
+    transform .08s ease,
+    background .08s ease,
+    box-shadow .08s ease;
+}
+
+.key:active {
+  transform: translateY(2px);
+
+  box-shadow: none;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--accent) 25%,
+      var(--bg-tertiary)
+    );
+}
+
+.key.wide {
+  flex: 1.6 1 0;
+}
+
+.key.extra-wide {
+  flex: 2.4 1 0;
+}
+
+.key.special {
+  background:
+    color-mix(
+      in srgb,
+      var(--accent) 9%,
+      var(--bg-tertiary)
+    );
+
+  color: #fbbf24;
+}
+
+.key.space {
+  flex:
+    5 1 0;
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+.toast {
+  position: fixed;
+
+  left: 50%;
+  bottom:
+    calc(
+      76px + var(--safe-bottom)
+    );
+
+  transform:
+    translate(-50%, 18px);
+
+  width: max-content;
+  max-width: calc(100vw - 32px);
+
+  padding: 10px 15px;
+
+  border-radius: 12px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg-tertiary) 96%,
+      transparent
+    );
+
+  border: 1px solid var(--border);
+
+  color: var(--text);
+
+  font-size: .75rem;
+
+  font-weight: 600;
+
+  text-align: center;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  z-index: 300;
+
+  transition:
+    transform .25s ease,
+    opacity .25s ease;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.toast.show {
+  transform:
+    translate(-50%, 0);
+
+  opacity: 1;
+}
+
+.toast.error {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.toast.success {
+  background:
+    color-mix(
+      in srgb,
+      var(--accent-secondary) 15%,
+      var(--bg-tertiary)
+    );
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent-secondary) 45%,
+      var(--border)
+    );
+}
+
+/* =========================================================
+   RESPONSIVE — SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  header {
+    min-height: 56px;
+
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+
+    flex-basis: 34px;
+
+    font-size: 16px;
+  }
+
+  .brand-title {
+    font-size: .86rem;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .status {
+    padding: 6px 8px;
+
+    font-size: .62rem;
+  }
+
+  #touchpad {
+    margin: 7px;
+
+    border-radius: 16px;
+  }
+
+  .gesture-hint {
+    bottom: 10px;
+
+    width: calc(100% - 20px);
+
+    padding: 7px 8px;
+
+    gap: 5px;
+
+    font-size: .56rem;
+  }
+
+  .bottom-bar {
+    gap: 5px;
+
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .btn {
+    min-width: 40px;
+    min-height: 40px;
+
+    padding: 7px;
+  }
+
+  .btn-label {
+    display: none;
+  }
+
+  .slider-wrap {
+    min-width: 72px;
+    width: 26vw;
+  }
+
+  .sensitivity-icon {
+    display: none;
+  }
+
+  .key {
+    min-height: 42px;
+
+    font-size: .68rem;
+
+    border-radius: 8px;
+  }
+}
+
+/* =========================================================
+   LANDSCAPE PHONE
+========================================================= */
+
+@media (orientation: landscape) and (max-height: 520px) {
+
+  header {
+    min-height: 48px;
+
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+
+    flex-basis: 32px;
+  }
+
+  #touchpad {
+    margin: 7px;
+  }
+
+  .gesture-hint {
+    bottom: 8px;
+  }
+
+  .bottom-bar {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .btn {
+    min-height: 36px;
+  }
+
+  #keyboard-drawer {
+    max-height: 82dvh;
+  }
+
+  .key {
+    min-height: 34px;
+  }
+}
+
+/* =========================================================
+   DESKTOP
+========================================================= */
+
+@media (min-width: 800px) {
+
+  body {
+    max-width: 1100px;
+
+    margin: 0 auto;
+
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  #touchpad {
+    margin: 14px;
+
+    border-radius: 24px;
+  }
+
+  .bottom-bar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  #keyboard-drawer {
+    left: 50%;
+
+    right: auto;
+
+    width: min(900px, 100%);
+
+    transform:
+      translate(-50%, 105%);
+  }
+
+  #keyboard-drawer.open {
+    transform:
+      translate(-50%, 0);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =======================================================
+     HEADER
+======================================================= -->
+
+<header>
+
+  <div class="brand">
+
+    <div class="brand-icon">
+      🖱️
+    </div>
+
+    <div class="brand-text">
+
+      <div class="brand-title">
+        Remote Touchpad
+      </div>
+
+      <div class="brand-subtitle">
+        Kontrol laptop dari perangkatmu
+      </div>
+
+    </div>
+
+  </div>
+
+  <div
+    id="status"
+    class="status connecting"
+  >
+    <span class="status-dot"></span>
+    <span id="status-text">
+      Menghubungkan...
+    </span>
+  </div>
+
+</header>
+
+
+<!-- =======================================================
+     MAIN
+======================================================= -->
+
+<main>
+
+  <!-- TOUCHPAD -->
+
+  <div id="touchpad">
+
+    <div
+      class="gesture-hint"
+      id="gesture-hint"
+    ></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       BOTTOM BAR
+  ====================================================== -->
+
+  <div class="bottom-bar">
+
+    <!-- LEFT -->
+
+    <div class="control-group left">
+
+      <button
+        id="btn-settings"
+        class="btn"
+        type="button"
+        aria-label="Pengaturan"
+      >
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-label">Pengaturan</span>
+      </button>
+
+    </div>
+
+
+    <!-- CENTER -->
+
+    <div class="control-group center">
+
+      <div class="sensitivity-control">
+
+        <span class="sensitivity-icon">
+          🎯
+        </span>
+
+        <div class="slider-wrap">
+
+          <div class="slider-label">
+
+            <span id="sens-label">
+              Sensitivitas
+            </span>
+
+            <span
+              id="sens-value"
+              class="setting-value"
+            >
+              2.0x
+            </span>
+
+          </div>
+
+          <input
+            type="range"
+            id="sensitivity"
+            min="0.5"
+            max="3"
+            step="0.1"
+            value="2"
+            aria-label="Sensitivitas mouse"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- RIGHT -->
+
+    <div class="control-group right">
+
+      <button
+        id="btn-keyboard"
+        class="btn secondary"
+        type="button"
+        aria-label="Buka keyboard"
+      >
+        <span class="btn-icon">⌨️</span>
+        <span class="btn-label">Keyboard</span>
+      </button>
+
+    </div>
+
+  </div>
+
+</main>
+
+
+<!-- =======================================================
+     SETTINGS OVERLAY
+======================================================= -->
+
+<div
+  class="sheet-overlay"
+  id="settings-overlay"
+></div>
+
+
+<!-- =======================================================
+     SETTINGS SHEET
+======================================================= -->
+
+<div
+  class="bottom-sheet"
+  id="settings-sheet"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Pengaturan"
+>
+
+  <div class="sheet-handle"></div>
+
+  <div class="sheet-header">
+
+    <div>
+
+      <div class="sheet-title">
+        ⚙️ Pengaturan
+      </div>
+
+      <div class="sheet-description">
+        Pengaturan remote touchpad
+      </div>
+
+    </div>
+
+    <button
+      id="btn-close-settings"
+      class="btn"
+      type="button"
+      aria-label="Tutup"
+    >
+      ✕
+    </button>
+
+  </div>
+
+
+  <div class="sheet-section">
+
+    <div class="sheet-section-title">
+      Touchpad
+    </div>
+
+    <div class="slider-wrap" style="width:100%;">
+
+      <div class="slider-label">
+
+        <span>
+          Sensitivitas pointer
+        </span>
+
+        <span
+          id="sens-value-settings"
+          class="setting-value"
+        >
+          2.0x
+        </span>
+
+      </div>
+
+      <input
+        type="range"
+        id="sensitivity-settings"
+        min="0.5"
+        max="3"
+        step="0.1"
+        value="2"
+      >
+
+    </div>
+
+  </div>
+
+
+  <div class="sheet-section">
+
+    <div class="sheet-section-title">
+      Gesture
+    </div>
+
+    <div
+      style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+      "
+    >
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        👆 1 jari
+      </div>
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        👆👆 2 jari
+      </div>
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        🖱️ Tap = kiri
+      </div>
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        🖱️ 2 tap = kanan
+      </div>
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        ↔️ Geser = gerak
+      </div>
+
+      <div
+        class="btn"
+        style="justify-content:flex-start;cursor:default;"
+      >
+        ↕️ Geser 2 = scroll
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="sheet-section">
+
+    <div class="sheet-section-title">
+      Status
+    </div>
+
+    <button
+      id="btn-reconnect"
+      class="btn primary"
+      type="button"
+      style="width:100%;"
+    >
+      🔄 Hubungkan ulang
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     KEYBOARD
+======================================================= -->
+
+<div
+  class="sheet-overlay"
+  id="keyboard-overlay"
+></div>
+
+
+<div
+  id="keyboard-drawer"
+  aria-label="Keyboard virtual"
+>
+
+  <div class="keyboard-header">
+
+    <div class="keyboard-title">
+      ⌨️ Keyboard
+    </div>
+
+    <button
+      id="btn-close-keyboard"
+      class="btn keyboard-close"
+      type="button"
+      aria-label="Tutup keyboard"
+    >
+      ✕
+    </button>
+
+  </div>
+
+  <!-- Keyboard rows inserted here -->
+
+</div>
+
+
+<!-- =======================================================
+     TOAST
+======================================================= -->
+
+<div
+  class="toast"
+  id="toast"
+></div>
+
+
+<script>
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+let CONFIG = null;
+
+let ws = null;
+
+let mouseSensitivity = 2.0;
+
+const fingers = new Map();
+
+let reconnectDelay = 1000;
+
+let reconnectTimer = null;
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const touchpad =
+  document.getElementById("touchpad");
+
+const statusEl =
+  document.getElementById("status");
+
+const statusText =
+  document.getElementById("status-text");
+
+const toast =
+  document.getElementById("toast");
+
+const keyboardDrawer =
+  document.getElementById("keyboard-drawer");
+
+const keyboardOverlay =
+  document.getElementById("keyboard-overlay");
+
+const gestureHint =
+  document.getElementById("gesture-hint");
+
+const sensSlider =
+  document.getElementById("sensitivity");
+
+const sensSliderSettings =
+  document.getElementById("sensitivity-settings");
+
+const sensValue =
+  document.getElementById("sens-value");
+
+const sensValueSettings =
+  document.getElementById("sens-value-settings");
+
+const sensLabel =
+  document.getElementById("sens-label");
+
+const settingsSheet =
+  document.getElementById("settings-sheet");
+
+const settingsOverlay =
+  document.getElementById("settings-overlay");
+
+const btnKeyboard =
+  document.getElementById("btn-keyboard");
+
+const btnSettings =
+  document.getElementById("btn-settings");
+
+const btnCloseKeyboard =
+  document.getElementById("btn-close-keyboard");
+
+const btnCloseSettings =
+  document.getElementById("btn-close-settings");
+
+const btnReconnect =
+  document.getElementById("btn-reconnect");
+
+
+/* =========================================================
+   DEFAULT CONFIG
+========================================================= */
+
+function getDefaultConfig() {
+
+  return {
+
+    touchpad: {
+
+      sensitivity: {
+        default: 2.0,
+        min: 0.5,
+        max: 3.0,
+        step: 0.1
+      },
+
+      gestures: {
+
+        one_finger: {
+          tap_max_ms: 250,
+          tap_max_px: 14,
+          double_tap_max_ms: 350
+        },
+
+        two_finger: {
+          scroll_factor: 0.6
+        }
+
+      },
+
+      reconnect: {
+        initial_delay_ms: 1000,
+        max_delay_ms: 10000,
+        multiplier: 2
+      },
+
+      heartbeat: {
+        interval_ms: 10000,
+        timeout_ms: 30000
+      }
+
+    },
+
+    ui: {
+
+      theme: {
+
+        bg_primary: "#0b0f19",
+        bg_secondary: "#111827",
+        border: "#26344d",
+
+        accent: "#6366f1",
+        accent_secondary: "#22c55e",
+
+        text: "#f8fafc",
+        text_muted: "#94a3b8",
+
+        touch_primary:
+          "rgba(99,102,241,.35)",
+
+        touch_secondary:
+          "rgba(34,197,94,.35)",
+
+        touch_border_primary:
+          "#818cf8",
+
+        touch_border_secondary:
+          "#4ade80"
+
+      },
+
+      layout: {
+        touchpad_min_height: 300,
+        gesture_hint_bottom: 16
+      },
+
+      show_gesture_hint: true,
+
+      gesture_hint_fade_ms: 5000,
+
+      gesture_hint_opacity_after_fade: 0.3
+
+    },
+
+    keyboard: {
+      rows: []
+    },
+
+    server: {
+      host: "0.0.0.0",
+      port: 8000
+    }
+
+  };
+
+}
+
+
+/* =========================================================
+   LOAD CONFIG
+========================================================= */
+
+async function loadConfig() {
+
+  try {
+
+    const res =
+      await fetch("/config", {
+        cache: "no-store"
+      });
+
+    if (!res.ok) {
+      throw new Error(
+        "HTTP " + res.status
+      );
+    }
+
+    CONFIG = await res.json();
+
+    applyConfig();
+
+  } catch (e) {
+
+    console.warn(
+      "Failed to load config, using defaults:",
+      e
+    );
+
+    CONFIG = getDefaultConfig();
+
+    applyConfig();
+
+  }
+
+}
+
+
+/* =========================================================
+   APPLY CONFIG
+========================================================= */
+
+function applyConfig() {
+
+  if (!CONFIG) return;
+
+  const c = CONFIG;
+
+  const t =
+    c.ui?.theme ||
+    getDefaultConfig().ui.theme;
+
+
+  /* Theme */
+
+  document.documentElement.style.setProperty(
+    "--bg-primary",
+    t.bg_primary
+  );
+
+  document.documentElement.style.setProperty(
+    "--bg-secondary",
+    t.bg_secondary
+  );
+
+  document.documentElement.style.setProperty(
+    "--border",
+    t.border
+  );
+
+  document.documentElement.style.setProperty(
+    "--accent",
+    t.accent
+  );
+
+  document.documentElement.style.setProperty(
+    "--accent-secondary",
+    t.accent_secondary
+  );
+
+  document.documentElement.style.setProperty(
+    "--text",
+    t.text
+  );
+
+  document.documentElement.style.setProperty(
+    "--text-muted",
+    t.text_muted
+  );
+
+  document.documentElement.style.setProperty(
+    "--touch-primary",
+    t.touch_primary
+  );
+
+  document.documentElement.style.setProperty(
+    "--touch-secondary",
+    t.touch_secondary
+  );
+
+  document.documentElement.style.setProperty(
+    "--touch-border-primary",
+    t.touch_border_primary
+  );
+
+  document.documentElement.style.setProperty(
+    "--touch-border-secondary",
+    t.touch_border_secondary
+  );
+
+
+  /* Sensitivity */
+
+  const s =
+    c.touchpad?.sensitivity ||
+    getDefaultConfig().touchpad.sensitivity;
+
+  sensSlider.min = s.min;
+  sensSlider.max = s.max;
+  sensSlider.step = s.step;
+  sensSlider.value = s.default;
+
+  sensSliderSettings.min = s.min;
+  sensSliderSettings.max = s.max;
+  sensSliderSettings.step = s.step;
+  sensSliderSettings.value = s.default;
+
+  mouseSensitivity =
+    parseFloat(s.default);
+
+  updateSensitivityUI();
+
+
+  /* Keyboard */
+
+  renderKeyboard(
+    c.keyboard?.rows || []
+  );
+
+
+  /* Gesture hint */
+
+  if (
+    c.ui?.show_gesture_hint !== false
+  ) {
+
+    gestureHint.style.display = "flex";
+
+    renderGestureHint();
+
+    setTimeout(() => {
+
+      gestureHint.style.opacity =
+        c.ui?.gesture_hint_opacity_after_fade ??
+        0.3;
+
+    }, c.ui?.gesture_hint_fade_ms || 5000);
+
+  } else {
+
+    gestureHint.style.display = "none";
+
+  }
+
+
+  /* Reconnect */
+
+  reconnectDelay =
+    c.touchpad?.reconnect?.initial_delay_ms ||
+    1000;
+
+}
+
+
+/* =========================================================
+   SENSITIVITY UI
+========================================================= */
+
+function updateSensitivityUI() {
+
+  const value =
+    mouseSensitivity.toFixed(1) + "x";
+
+  sensValue.textContent = value;
+
+  sensValueSettings.textContent = value;
+
+  sensSlider.value =
+    mouseSensitivity;
+
+  sensSliderSettings.value =
+    mouseSensitivity;
+
+}
+
+
+/* =========================================================
+   GESTURE HINT
+========================================================= */
+
+function renderGestureHint() {
+
+  gestureHint.innerHTML = `
+
+    <span>
+      1 jari
+      <kbd>geser</kbd>
+      gerak
+    </span>
+
+    <span>
+      1 jari
+      <kbd>tap</kbd>
+      kiri
+    </span>
+
+    <span>
+      2 jari
+      <kbd>tap</kbd>
+      kanan
+    </span>
+
+    <span>
+      2 jari
+      <kbd>geser</kbd>
+      scroll
+    </span>
+
+    <span>
+      <kbd>2× tap</kbd>
+      double
+    </span>
+
+  `;
+
+}
+
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+function renderKeyboard(rows) {
+
+  if (
+    !rows ||
+    rows.length === 0
+  ) {
+
+    keyboardDrawer.insertAdjacentHTML(
+      "beforeend",
+      `
+      <div
+        style="
+          padding:30px 15px;
+          text-align:center;
+          color:var(--text-muted);
+          font-size:.75rem;
+        "
+      >
+        Keyboard belum dikonfigurasi.
+      </div>
+      `
+    );
+
+    return;
+  }
+
+
+  const existingRows =
+    keyboardDrawer.querySelectorAll(
+      ".keyboard-row"
+    );
+
+  existingRows.forEach(
+    el => el.remove()
+  );
+
+
+  rows.forEach(row => {
+
+    const rowEl =
+      document.createElement("div");
+
+    rowEl.className =
+      "keyboard-row";
+
+
+    row.forEach(k => {
+
+      const button =
+        document.createElement("button");
+
+      button.className = "key";
+
+
+      let keyValue;
+
+      let label;
+
+
+      if (typeof k === "string") {
+
+        keyValue = k;
+        label = k;
+
+      } else {
+
+        keyValue = k.key;
+
+        label = k.key;
+
+        if (k.wide) {
+          button.classList.add("wide");
+        }
+
+        if (k.extra_wide) {
+          button.classList.add(
+            "extra-wide"
+          );
+        }
+
+        if (k.special) {
+          button.classList.add(
+            "special"
+          );
+        }
+
+        if (k.space) {
+          button.classList.add(
+            "space"
+          );
+        }
+
+      }
+
+
+      const displayMap = {
+
+        backspace: "⌫",
+
+        escape: "Esc",
+
+        enter: "Enter",
+
+        tab: "Tab",
+
+        shift: "Shift",
+
+        ctrl: "Ctrl",
+
+        control: "Ctrl",
+
+        alt: "Alt",
+
+        meta: "⌘",
+
+        win: "⊞",
+
+        space: "Space",
+
+        arrowup: "↑",
+
+        arrowdown: "↓",
+
+        arrowleft: "←",
+
+        arrowright: "→"
+
+      };
+
+
+      label =
+        displayMap[
+          String(keyValue).toLowerCase()
+        ] ||
+        label;
+
+
+      button.textContent = label;
+
+      button.dataset.key =
+        keyValue;
+
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          send({
+            type: "key",
+            key: keyValue
+          });
+
+        }
+      );
+
+
+      rowEl.appendChild(button);
+
+    });
+
+
+    keyboardDrawer.appendChild(
+      rowEl
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHtml(text) {
+
+  const map = {
+
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+    "\\": "&#92;"
+
+  };
+
+  return String(text).replace(
+    /[&<>"'\\]/g,
+    m => map[m]
+  );
+
+}
+
+
+/* =========================================================
+   WEBSOCKET
+========================================================= */
+
+function connect() {
+
+  if (
+    reconnectTimer
+  ) {
+
+    clearTimeout(
+      reconnectTimer
+    );
+
+    reconnectTimer = null;
+
+  }
+
+
+  try {
+
+    const proto =
+      location.protocol === "https:"
+        ? "wss:"
+        : "ws:";
+
+
+    ws = new WebSocket(
+      proto +
+      "//" +
+      location.host +
+      "/ws"
+    );
+
+
+    setStatus(
+      "Menghubungkan...",
+      "connecting"
+    );
+
+
+    ws.onopen = () => {
+
+      reconnectDelay =
+        CONFIG?.touchpad?.reconnect
+          ?.initial_delay_ms ||
+        1000;
+
+
+      setStatus(
+        "Terhubung",
+        "connected"
+      );
+
+
+      showToast(
+        "Terhubung ke laptop!",
+        "success"
+      );
+
+
+      send({
+        type: "config",
+        mouseSensitivity
+      });
+
+    };
+
+
+    ws.onclose = () => {
+
+      setStatus(
+        "Terputus",
+        "connecting"
+      );
+
+
+      fingers.clear();
+
+      clearIndicators();
+
+
+      reconnectTimer =
+        setTimeout(
+          connect,
+          reconnectDelay
+        );
+
+
+      reconnectDelay =
+        Math.min(
+          reconnectDelay *
+            (
+              CONFIG?.touchpad
+                ?.reconnect
+                ?.multiplier ||
+              2
+            ),
+
+          CONFIG?.touchpad
+            ?.reconnect
+            ?.max_delay_ms ||
+          10000
+        );
+
+    };
+
+
+    ws.onerror = () => {
+
+      try {
+
+        ws.close();
+
+      } catch (e) {}
+
+    };
+
+
+    ws.onmessage = event => {
+
+      try {
+
+        const message =
+          JSON.parse(
+            event.data
+          );
+
+
+        if (
+          message.type === "ping" &&
+          ws.readyState === 1
+        ) {
+
+          ws.send(
+            JSON.stringify({
+              type: "pong"
+            })
+          );
+
+        }
+
+      } catch (e) {
+
+        /* Ignore malformed message */
+
+      }
+
+    };
+
+
+  } catch (error) {
+
+    console.error(
+      "WebSocket error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   SEND
+========================================================= */
+
+function send(data) {
+
+  if (
+    ws &&
+    ws.readyState === WebSocket.OPEN
+  ) {
+
+    ws.send(
+      JSON.stringify(data)
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(
+  text,
+  className
+) {
+
+  statusText.textContent =
+    text;
+
+  statusEl.className =
+    "status " +
+    className;
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+function showToast(
+  message,
+  className = ""
+) {
+
+  toast.textContent =
+    message;
+
+  toast.className =
+    "toast show " +
+    className;
+
+
+  clearTimeout(
+    showToast.timer
+  );
+
+
+  showToast.timer =
+    setTimeout(
+      () => {
+
+        toast.classList.remove(
+          "show"
+        );
+
+      },
+      2200
+    );
+
+}
+
+
+/* =========================================================
+   TOUCH INDICATORS
+========================================================= */
+
+function clearIndicators() {
+
+  document
+    .querySelectorAll(
+      ".touch-indicator"
+    )
+    .forEach(
+      el => el.remove()
+    );
+
+}
+
+
+function makeIndicator(
+  x,
+  y,
+  secondary
+) {
+
+  const rect =
+    touchpad.getBoundingClientRect();
+
+
+  const el =
+    document.createElement(
+      "div"
+    );
+
+
+  el.className =
+    "touch-indicator" +
+    (
+      secondary
+        ? " secondary"
+        : ""
+    );
+
+
+  el.style.left =
+    (
+      x -
+      rect.left
+    ) +
+    "px";
+
+
+  el.style.top =
+    (
+      y -
+      rect.top
+    ) +
+    "px";
+
+
+  touchpad.appendChild(
+    el
+  );
+
+
+  return el;
+
+}
+
+
+function moveIndicator(
+  el,
+  x,
+  y
+) {
+
+  if (!el) return;
+
+
+  const rect =
+    touchpad.getBoundingClientRect();
+
+
+  el.style.left =
+    (
+      x -
+      rect.left
+    ) +
+    "px";
+
+
+  el.style.top =
+    (
+      y -
+      rect.top
+    ) +
+    "px";
+
+}
+
+
+/* =========================================================
+   GESTURE CONFIG
+========================================================= */
+
+function getGestureConfig() {
+
+  const defaults =
+    getDefaultConfig()
+      .touchpad
+      .gestures;
+
+
+  return {
+
+    tapMaxMs:
+      CONFIG?.touchpad?.gestures
+        ?.one_finger
+        ?.tap_max_ms ??
+      defaults.one_finger
+        .tap_max_ms,
+
+    tapMaxPx:
+      CONFIG?.touchpad?.gestures
+        ?.one_finger
+        ?.tap_max_px ??
+      defaults.one_finger
+        .tap_max_px,
+
+    doubleMs:
+      CONFIG?.touchpad?.gestures
+        ?.one_finger
+        ?.double_tap_max_ms ??
+      defaults.one_finger
+        .double_tap_max_ms,
+
+    scrollFactor:
+      CONFIG?.touchpad?.gestures
+        ?.two_finger
+        ?.scroll_factor ??
+      defaults.two_finger
+        .scroll_factor
+
+  };
+
+}
+
+
+let lastTapTime = 0;
+
+let lastTapFingers = 0;
+
+
+/* =========================================================
+   TOUCH START
+========================================================= */
+
+touchpad.addEventListener(
+  "touchstart",
+  event => {
+
+    event.preventDefault();
+
+
+    const now =
+      performance.now();
+
+
+    for (
+      const touch
+      of event.changedTouches
+    ) {
+
+      fingers.set(
+        touch.identifier,
+        {
+
+          sx: touch.clientX,
+
+          sy: touch.clientY,
+
+          lx: touch.clientX,
+
+          ly: touch.clientY,
+
+          st: now,
+
+          moved: false,
+
+          el: makeIndicator(
+            touch.clientX,
+            touch.clientY,
+            fingers.size > 0
+          )
+
+        }
+      );
+
+    }
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+/* =========================================================
+   TOUCH MOVE
+========================================================= */
+
+touchpad.addEventListener(
+  "touchmove",
+  event => {
+
+    event.preventDefault();
+
+
+    const rect =
+      touchpad.getBoundingClientRect();
+
+
+    const numberOfFingers =
+      fingers.size;
+
+
+    const gesture =
+      getGestureConfig();
+
+
+    for (
+      const touch
+      of event.changedTouches
+    ) {
+
+      const finger =
+        fingers.get(
+          touch.identifier
+        );
+
+
+      if (!finger) continue;
+
+
+      const dxPx =
+        touch.clientX -
+        finger.lx;
+
+
+      const dyPx =
+        touch.clientY -
+        finger.ly;
+
+
+      finger.lx =
+        touch.clientX;
+
+
+      finger.ly =
+        touch.clientY;
+
+
+      if (
+        Math.hypot(
+          touch.clientX -
+            finger.sx,
+
+          touch.clientY -
+            finger.sy
+        ) >
+        gesture.tapMaxPx
+      ) {
+
+        finger.moved = true;
+
+      }
+
+
+      moveIndicator(
+        finger.el,
+        touch.clientX,
+        touch.clientY
+      );
+
+
+      /* One finger = mouse */
+
+      if (
+        numberOfFingers === 1
+      ) {
+
+        send({
+
+          type: "move",
+
+          dx:
+            dxPx /
+            rect.width *
+            900 *
+            mouseSensitivity,
+
+          dy:
+            dyPx /
+            rect.height *
+            900 *
+            mouseSensitivity
+
+        });
+
+      }
+
+
+      /* Two fingers = scroll */
+
+      else if (
+        numberOfFingers === 2
+      ) {
+
+        send({
+
+          type: "scroll",
+
+          dy:
+            -dyPx *
+            gesture.scrollFactor
+
+        });
+
+      }
+
+    }
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+/* =========================================================
+   TOUCH END
+========================================================= */
+
+function endTouch(event) {
+
+  event.preventDefault();
+
+
+  const now =
+    performance.now();
+
+
+  const numberOfFingers =
+    fingers.size;
+
+
+  const gesture =
+    getGestureConfig();
+
+
+  let tapFingers = 0;
+
+
+  for (
+    const touch
+    of event.changedTouches
+  ) {
+
+    const finger =
+      fingers.get(
+        touch.identifier
+      );
+
+
+    if (!finger) continue;
+
+
+    const quick =
+      (
+        now -
+        finger.st
+      ) <
+      gesture.tapMaxMs;
+
+
+    const still =
+      Math.hypot(
+        touch.clientX -
+          finger.sx,
+
+        touch.clientY -
+          finger.sy
+      ) <=
+      gesture.tapMaxPx;
+
+
+    if (
+      quick &&
+      still &&
+      !finger.moved
+    ) {
+
+      tapFingers++;
+
+    }
+
+
+    if (finger.el) {
+
+      finger.el.remove();
+
+    }
+
+
+    fingers.delete(
+      touch.identifier
+    );
+
+  }
+
+
+  if (
+    tapFingers > 0 &&
+    fingers.size === 0
+  ) {
+
+    /* One finger */
+
+    if (
+      tapFingers === 1
+    ) {
+
+      if (
+        numberOfFingers === 1 &&
+        now -
+          lastTapTime <
+          gesture.doubleMs &&
+        lastTapFingers === 1
+      ) {
+
+        send({
+
+          type: "click",
+
+          button: "double"
+
+        });
+
+
+        lastTapTime = 0;
+
+      } else {
+
+        send({
+
+          type: "click",
+
+          button: "left"
+
+        });
+
+
+        lastTapTime =
+          now;
+
+        lastTapFingers =
+          1;
+
+      }
+
+    }
+
+
+    /* Two fingers */
+
+    else if (
+      tapFingers === 2
+    ) {
+
+      send({
+
+        type: "click",
+
+        button: "right"
+
+      });
+
+
+      lastTapTime =
+        now;
+
+      lastTapFingers =
+        2;
+
+    }
+
+  }
+
+}
+
+
+touchpad.addEventListener(
+  "touchend",
+  endTouch,
+  {
+    passive: false
+  }
+);
+
+
+/* =========================================================
+   TOUCH CANCEL
+========================================================= */
+
+touchpad.addEventListener(
+  "touchcancel",
+  event => {
+
+    for (
+      const touch
+      of event.changedTouches
+    ) {
+
+      const finger =
+        fingers.get(
+          touch.identifier
+        );
+
+
+      if (
+        finger &&
+        finger.el
+      ) {
+
+        finger.el.remove();
+
+      }
+
+
+      fingers.delete(
+        touch.identifier
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DESKTOP MOUSE TESTING
+========================================================= */
+
+let mouseDown = false;
+
+let mouseLastX = 0;
+
+let mouseLastY = 0;
+
+let mouseIndicator = null;
+
+
+touchpad.addEventListener(
+  "mousedown",
+  event => {
+
+    mouseDown = true;
+
+    mouseLastX =
+      event.clientX;
+
+    mouseLastY =
+      event.clientY;
+
+
+    mouseIndicator =
+      makeIndicator(
+        event.clientX,
+        event.clientY,
+        false
+      );
+
+  }
+);
+
+
+touchpad.addEventListener(
+  "mousemove",
+  event => {
+
+    if (!mouseDown) return;
+
+
+    const rect =
+      touchpad.getBoundingClientRect();
+
+
+    send({
+
+      type: "move",
+
+      dx:
+        (
+          event.clientX -
+          mouseLastX
+        ) /
+        rect.width *
+        900 *
+        mouseSensitivity,
+
+      dy:
+        (
+          event.clientY -
+          mouseLastY
+        ) /
+        rect.height *
+        900 *
+        mouseSensitivity
+
+    });
+
+
+    mouseLastX =
+      event.clientX;
+
+    mouseLastY =
+      event.clientY;
+
+
+    moveIndicator(
+      mouseIndicator,
+      event.clientX,
+      event.clientY
+    );
+
+  }
+);
+
+
+touchpad.addEventListener(
+  "mouseup",
+  () => {
+
+    mouseDown = false;
+
+
+    if (mouseIndicator) {
+
+      mouseIndicator.remove();
+
+    }
+
+
+    mouseIndicator = null;
+
+  }
+);
+
+
+touchpad.addEventListener(
+  "mouseleave",
+  () => {
+
+    if (!mouseDown) return;
+
+    mouseDown = false;
+
+
+    if (mouseIndicator) {
+
+      mouseIndicator.remove();
+
+    }
+
+
+    mouseIndicator = null;
+
+  }
+);
+
+
+touchpad.addEventListener(
+  "wheel",
+  event => {
+
+    event.preventDefault();
+
+
+    send({
+
+      type: "scroll",
+
+      dy:
+        -event.deltaY *
+        0.05
+
+    });
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+/* Prevent browser context menu */
+
+document.addEventListener(
+  "contextmenu",
+  event => {
+
+    event.preventDefault();
+
+  }
+);
+
+
+/* =========================================================
+   SENSITIVITY
+========================================================= */
+
+function setSensitivity(
+  value
+) {
+
+  mouseSensitivity =
+    parseFloat(value);
+
+
+  updateSensitivityUI();
+
+
+  send({
+
+    type: "config",
+
+    mouseSensitivity
+
+  });
+
+}
+
+
+sensSlider.addEventListener(
+  "input",
+  () => {
+
+    setSensitivity(
+      sensSlider.value
+    );
+
+  }
+);
+
+
+sensSliderSettings.addEventListener(
+  "input",
+  () => {
+
+    setSensitivity(
+      sensSliderSettings.value
+    );
+
+  }
+);
+
+
+/* =========================================================
+   KEYBOARD DRAWER
+========================================================= */
+
+function openKeyboard() {
+
+  keyboardDrawer.classList.add(
+    "open"
+  );
+
+  keyboardOverlay.classList.add(
+    "visible"
+  );
+
+  btnKeyboard.classList.add(
+    "primary"
+  );
+
+}
+
+
+function closeKeyboard() {
+
+  keyboardDrawer.classList.remove(
+    "open"
+  );
+
+  keyboardOverlay.classList.remove(
+    "visible"
+  );
+
+  btnKeyboard.classList.remove(
+    "primary"
+  );
+
+}
+
+
+function toggleKeyboard() {
+
+  if (
+    keyboardDrawer.classList.contains(
+      "open"
+    )
+  ) {
+
+    closeKeyboard();
+
+  } else {
+
+    closeKeyboard();
+
+    closeSettings();
+
+    openKeyboard();
+
+  }
+
+}
+
+
+btnKeyboard.addEventListener(
+  "click",
+  toggleKeyboard
+);
+
+
+btnCloseKeyboard.addEventListener(
+  "click",
+  closeKeyboard
+);
+
+
+keyboardOverlay.addEventListener(
+  "click",
+  closeKeyboard
+);
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+function openSettings() {
+
+  closeKeyboard();
+
+  settingsSheet.classList.add(
+    "open"
+  );
+
+  settingsOverlay.classList.add(
+    "visible"
+  );
+
+}
+
+
+function closeSettings() {
+
+  settingsSheet.classList.remove(
+    "open"
+  );
+
+  settingsOverlay.classList.remove(
+    "visible"
+  );
+
+}
+
+
+function toggleSettings() {
+
+  if (
+    settingsSheet.classList.contains(
+      "open"
+    )
+  ) {
+
+    closeSettings();
+
+  } else {
+
+    openSettings();
+
+  }
+
+}
+
+
+btnSettings.addEventListener(
+  "click",
+  toggleSettings
+);
+
+
+btnCloseSettings.addEventListener(
+  "click",
+  closeSettings
+);
+
+
+settingsOverlay.addEventListener(
+  "click",
+  closeSettings
+);
+
+
+/* =========================================================
+   RECONNECT BUTTON
+========================================================= */
+
+btnReconnect.addEventListener(
+  "click",
+  () => {
+
+    closeSettings();
+
+
+    showToast(
+      "Menghubungkan ulang...",
+      ""
+    );
+
+
+    try {
+
+      if (ws) {
+
+        ws.onclose = null;
+
+        ws.close();
+
+      }
+
+    } catch (e) {}
+
+
+    setTimeout(
+      connect,
+      150
+    );
+
+  }
+);
+
+
+/* =========================================================
+   ESC KEY
+========================================================= */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key === "Escape"
+    ) {
+
+      closeKeyboard();
+
+      closeSettings();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   VISIBILITY
+========================================================= */
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (
+      document.hidden
+    ) {
+
+      fingers.clear();
+
+      clearIndicators();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PREVENT ACCIDENTAL ZOOM / GESTURES
+========================================================= */
+
+document.addEventListener(
+  "gesturestart",
+  event => {
+
+    event.preventDefault();
+
+  }
+);
+
+document.addEventListener(
+  "gesturechange",
+  event => {
+
+    event.preventDefault();
+
+  }
+);
+
+document.addEventListener(
+  "gestureend",
+  event => {
+
+    event.preventDefault();
+
+  }
+);
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+loadConfig()
+  .then(() => {
+
+    connect();
+
+  });
+
+</script>
+
+</body>
+</html>
+```

@@ -1,0 +1,4 @@
+fastapi>=0.109
+uvicorn>=0.27
+pynput>=1.7
+jinja2>=3.1
