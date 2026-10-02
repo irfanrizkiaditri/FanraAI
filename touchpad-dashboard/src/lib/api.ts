@@ -29,14 +29,19 @@ export async function fetchTunnel<T>(endpoint: string): Promise<T | null> {
 }
 
 export async function getHealth() {
-  return fetchLocal<{ status: string; connections: number }>('/health') ||
-         fetchTunnel<{ status: string; connections: number }>('/health');
+  const local = await fetchLocal<{ status: string; connections: number }>('/health');
+  if (local) return local;
+  return await fetchTunnel<{ status: string; connections: number }>('/health');
 }
 
 export async function getConfig() {
-  return fetchLocal<any>('/config') || fetchTunnel<any>('/config');
+  const local = await fetchLocal<Record<string, unknown>>('/config');
+  if (local) return local;
+  return await fetchTunnel<Record<string, unknown>>('/config');
 }
 
 export async function getIndex() {
-  return fetchLocal<string>('/') || fetchTunnel<string>('/');
+  const local = await fetchLocal<string>('/');
+  if (local) return local;
+  return await fetchTunnel<string>('/');
 }

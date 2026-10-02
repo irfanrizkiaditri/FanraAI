@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RefreshCw } from 'lucide-react';
 
 interface HealthData {
   status: string;
@@ -54,42 +55,70 @@ export function TouchpadStatus() {
     setError(null);
     try {
       const res = await fetch('/api/status');
-      if (!res.ok) throw new Error('Failed to fetch status');
+      if (!res.ok) throw new Error('Gagal memuat status');
       const data = await res.json();
       setHealth(data.health);
       setConfig(data.config);
       setTunnelUrl(data.tunnelUrl || '');
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'Kesalahan jaringan');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+    let ignore = false;
+
+    const loadStatus = async () => {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) throw new Error('Gagal memuat status');
+        const data = await res.json();
+        if (!ignore) {
+          setHealth(data.health);
+          setConfig(data.config);
+          setTunnelUrl(data.tunnelUrl || '');
+          setError(null);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : 'Kesalahan jaringan');
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadStatus();
+    const interval = setInterval(loadStatus, 10000);
+    return () => {
+      ignore = true;
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-        <div className="h-32 bg-gray-200 rounded"></div>
-        <div className="h-32 bg-gray-200 rounded"></div>
+      <div className="space-y-2 py-1">
+        <div className="h-6 bg-zinc-900 rounded w-1/3 animate-pulse" />
+        <div className="h-16 bg-zinc-900 rounded animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-red-600 bg-red-50 rounded-lg border border-red-200">
-        <p className="font-medium">Gagal memuat status</p>
-        <p className="text-sm">{error}</p>
+      <div className="p-3 bg-zinc-950 border border-zinc-800 rounded text-xs space-y-1.5">
+        <p className="text-zinc-400 font-medium">Gagal memuat status server</p>
+        <p className="text-zinc-500 text-[11px]">{error}</p>
         <button
+          type="button"
           onClick={fetchData}
-          className="mt-2 px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+          className="px-2.5 py-1 text-[11px] bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded border border-zinc-800 cursor-pointer"
         >
           Coba Lagi
         </button>
@@ -97,88 +126,71 @@ export function TouchpadStatus() {
     );
   }
 
-  const statusColor = health?.status === 'ok' ? 'text-green-600' : 'text-red-600';
-  const statusBg = health?.status === 'ok' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5 text-xs text-zinc-300">
       {/* Server Status Card */}
-      <div className={`p-4 rounded-lg border ${statusBg}`}>
+      <div className="p-2.5 rounded border border-zinc-850 bg-zinc-950">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">Touchpad Server</h3>
-            <p className={`text-sm ${statusColor}`}>
-              {health?.status === 'ok' ? '🟢 Online' : '🔴 Offline'}
-            </p>
+            <span className="text-[11px] font-medium text-zinc-300">Status Server</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${health?.status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              <span className="text-[11px] text-zinc-400">{health?.status === 'ok' ? 'Online' : 'Offline'}</span>
+            </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900">{health?.connections ?? 0}</p>
-            <p className="text-xs text-gray-500">Device Terhubung</p>
+            <span className="text-sm font-semibold text-zinc-300">{health?.connections ?? 0}</span>
+            <p className="text-[10px] text-zinc-500">Perangkat</p>
           </div>
         </div>
+
         {tunnelUrl && (
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm font-medium text-blue-900">Public Tunnel (Cloudflare)</p>
+          <div className="mt-2 p-2 bg-black border border-zinc-800 rounded">
+            <p className="text-[10px] text-zinc-500">Public Tunnel</p>
             <a
               href={tunnelUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-blue-700 underline break-all hover:text-blue-900"
+              className="text-[11px] text-zinc-400 underline break-all hover:text-zinc-200 block mt-0.5"
             >
               {tunnelUrl}
             </a>
-            <p className="text-xs text-blue-600 mt-1">Buka di HP untuk kontrol touchpad</p>
           </div>
         )}
       </div>
 
       {/* Config Card */}
       {config && (
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-3">Konfigurasi Aktif</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="p-2.5 bg-zinc-950 rounded border border-zinc-850">
+          <span className="text-[11px] font-medium text-zinc-300 block mb-1.5">Konfigurasi</span>
+          <div className="grid grid-cols-2 gap-2 text-[10px] text-zinc-400">
             <div>
-              <p className="text-gray-500">Sensitivitas</p>
-              <p className="font-mono text-lg">{config.touchpad.sensitivity.default}x</p>
-              <p className="text-xs text-gray-400">
-                Range: {config.touchpad.sensitivity.min}x – {config.touchpad.sensitivity.max}x
-              </p>
+              <span className="text-zinc-500 block">Sensitivitas</span>
+              <span className="text-zinc-300">{config.touchpad.sensitivity.default}x</span>
             </div>
             <div>
-              <p className="text-gray-500">Tap / Double-tap</p>
-              <p className="font-mono">
-                {config.touchpad.gestures.tap_max_ms}ms / {config.touchpad.gestures.double_tap_ms}ms
-              </p>
+              <span className="text-zinc-500 block">Tap / Double-tap</span>
+              <span className="text-zinc-300">{config.touchpad.gestures.tap_max_ms}ms</span>
             </div>
             <div>
-              <p className="text-gray-500">Scroll Factor</p>
-              <p className="font-mono text-lg">{config.touchpad.gestures.scroll_factor}x</p>
+              <span className="text-zinc-500 block">Scroll Multiplier</span>
+              <span className="text-zinc-300">{config.touchpad.gestures.scroll_factor}x</span>
             </div>
             <div>
-              <p className="text-gray-500">Heartbeat</p>
-              <p className="font-mono">
-                {config.touchpad.heartbeat.interval_ms}ms / timeout {config.touchpad.heartbeat.timeout_ms}ms
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">Reconnect</p>
-              <p className="font-mono">
-                {config.touchpad.reconnect.base_ms}ms → {config.touchpad.reconnect.max_ms}ms
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">Theme</p>
-              <p className="font-mono capitalize">{config.ui.theme}</p>
+              <span className="text-zinc-500 block">Port Server</span>
+              <span className="text-zinc-300">{config.server.port}</span>
             </div>
           </div>
         </div>
       )}
 
       <button
+        type="button"
         onClick={fetchData}
-        className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+        className="w-full py-1.5 px-3 bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded text-[11px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
       >
-        🔄 Refresh Status
+        <RefreshCw className="w-3 h-3 text-zinc-500" />
+        <span>Muat Ulang Status</span>
       </button>
     </div>
   );

@@ -1,0 +1,7 @@
+{
+  "name": "Touchpad Dashboard",
+  "description": "Monitor & control remote touchpad server, configuration, and public tunnel access",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
