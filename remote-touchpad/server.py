@@ -653,6 +653,29 @@ async def volume_get():
         return {"ok": True, "percent": None, "muted": None}
 
 
+# ==================== Screenshot ====================
+# Ambil screenshot layar laptop. Disimpan ke scratch, dikembalikan sebagai JPEG
+# (lebih kecil dari PNG untuk transfer via tunnel).
+SCREENSHOT_DIR = Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch")
+
+
+@app.get("/screenshot")
+async def screenshot():
+    try:
+        from PIL import ImageGrab
+
+        img = ImageGrab.grab()
+        # Resize jika terlalu lebar untuk mempercepat transfer
+        if img.width > 1280:
+            ratio = 1280 / img.width
+            img = img.resize((1280, int(img.height * ratio)), 3)
+        target = SCREENSHOT_DIR / f"live-shot-{int(time.time())}.jpg"
+        img.save(str(target), "JPEG", quality=70)
+        return FileResponse(str(target), media_type="image/jpeg")
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
 PID_FILE = Path(__file__).parent / ".server.pid"
 PORT = CONFIG.get("server", {}).get("port", 8000)
 HOST = CONFIG.get("server", {}).get("host", "0.0.0.0")
