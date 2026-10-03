@@ -421,6 +421,69 @@ async def health():
     return {"status": "ok", "connections": len(manager.active_connections)}
 
 
+# ==================== System Monitor ====================
+# Dipakai portal FanraAi (Vercel) untuk tampilkan baterai, RAM, CPU, uptime
+# laptop Irfan. CORS allow_origins ["*"] wajib supaya bisa di-fetch cross-origin.
+@app.get("/system")
+async def system_info():
+    import platform
+    import psutil
+
+    # Baterai
+    try:
+        battery = psutil.sensors_battery()
+        batt = {
+            "percent": round(battery.percent) if battery else None,
+            "plugged": bool(battery.power_plugged) if battery else None,
+            "secs_left": battery.secsleft if battery else None,
+        }
+    except Exception:
+        batt = {"percent": None, "plugged": None, "secs_left": None}
+
+    # RAM
+    vm = psutil.virtual_memory()
+    ram = {
+        "total_gb": round(vm.total / (1024**3), 1),
+        "used_gb": round(vm.used / (1024**3), 1),
+        "percent": round(vm.percent),
+    }
+
+    # CPU
+    try:
+        cpu_percent = round(psutil.cpu_percent(interval=0.4))
+    except Exception:
+        cpu_percent = None
+    try:
+        cpu_freq = round(psutil.cpu_freq().current / 1000, 1) if psutil.cpu_freq() else None
+    except Exception:
+        cpu_freq = None
+    try:
+        load5 = round(os.getloadavg()[1], 2)
+    except Exception:
+        load5 = None
+
+    # Uptime (detik sejak boot)
+    try:
+        uptime_s = int(time.time() - psutil.boot_time())
+    except Exception:
+        uptime_s = None
+
+    return {
+        "hostname": platform.node(),
+        "os": f"{platform.system()} {platform.release()}",
+        "cpu_percent": cpu_percent,
+        "cpu_freq_ghz": cpu_freq,
+        "cpu_cores": psutil.cpu_count(logical=False),
+        "cpu_threads": psutil.cpu_count(logical=True),
+        "load5": load5,
+        "ram": ram,
+        "battery": batt,
+        "uptime_s": uptime_s,
+        "ts": int(time.time()),
+    }
+
+
+
 # ==================== Lifecycle Commands ====================
 PID_FILE = Path(__file__).parent / ".server.pid"
 PORT = CONFIG.get("server", {}).get("port", 8000)
