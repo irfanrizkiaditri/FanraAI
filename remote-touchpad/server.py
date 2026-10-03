@@ -484,7 +484,58 @@ async def system_info():
 
 
 
-# ==================== Lifecycle Commands ====================
+# ==================== Clipboard Sync ====================
+# Sinkron teks antara HP (portal) dan laptop. Disimpan di memori + file
+# (clipboard.json) supaya tidak hilang saat server restart.
+CLIPBOARD_FILE = Path(__file__).parent / "clipboard.json"
+_clipboard_lock = asyncio.Lock()
+
+
+async def _read_clipboard() -> dict:
+    try:
+        if CLIPBOARD_FILE.exists():
+            return json.loads(CLIPBOARD_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {"text": "", "updated": 0, "from": ""}
+
+
+async def _write_clipboard(data: dict) -> None:
+    try:
+        CLIPBOARD_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+@app.get("/clipboard")
+async def clipboard_get():
+    async with _clipboard_lock:
+        return await _read_clipboard()
+
+
+@app.post("/clipboard")
+async def clipboard_set(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Body bukan JSON valid"}
+    text = str(body.get("text", ""))
+    if len(text) > 100_000:
+        return {"ok": False, "error": "Teks terlalu panjang (maks 100KB)"}
+    data = {"text": text, "updated": int(time.time()), "from": str(body.get("from", "portal"))}
+    async with _clipboard_lock:
+        await _write_clipboard(data)
+    # Sinkron ke clipboard laptop (pynput sudah diimport di file ini)
+    try:
+        import pyperclip
+
+        pyperclip.copy(text)
+    except Exception:
+        pass
+    return {"ok": True, **data}
+
+
+
 PID_FILE = Path(__file__).parent / ".server.pid"
 PORT = CONFIG.get("server", {}).get("port", 8000)
 HOST = CONFIG.get("server", {}).get("host", "0.0.0.0")
