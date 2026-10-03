@@ -676,6 +676,54 @@ async def screenshot():
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
+# ==================== Text To Speech ====================
+# Generate suara dari teks. Default voice: Jean (Pocket TTS, lokal CPU).
+# Voice state ada di C:/Users/ASUS/FanraAi/voice-jean.safetensors
+VOICE_STATE_FILE = "C:/Users/ASUS/FanraAi/voice-jean.safetensors"
+TTS_CONFIG = "C:/Users/ASUS/AppData/Roaming/Python/Python314/site-packages/pocket_tts/config/english_2026-09.yaml"
+_tts_model = None
+
+
+def _get_tts_model():
+    global _tts_model
+    if _tts_model is None:
+        from pocket_tts import TTSModel
+
+        _tts_model = TTSModel.load_model(config=TTS_CONFIG)
+    return _tts_model
+
+
+@app.post("/tts")
+async def text_to_speech(request: Request):
+    """Body: {"text": "..."} -> audio/wav 24kHz mono."""
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Body bukan JSON valid"}, status_code=400)
+    text = str(body.get("text", "")).strip()
+    if not text:
+        return JSONResponse({"ok": False, "error": "Teks tidak boleh kosong"}, status_code=400)
+    if len(text) > 2000:
+        return JSONResponse({"ok": False, "error": "Teks terlalu panjang (maks 2000 karakter)"}, status_code=400)
+    try:
+        import scipy.io.wavfile
+        import numpy as np
+
+        model = _get_tts_model()
+        voice = model.get_state_for_audio_prompt(VOICE_STATE_FILE)
+        audio = model.generate_audio(voice, text)
+        a = audio.numpy().astype(np.float32)
+        a = a / (np.max(np.abs(a)) + 1e-9)
+        a = (a * 32767).astype(np.int16)
+
+        out = Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch/tts-out.wav")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        scipy.io.wavfile.write(str(out), model.sample_rate, a)
+        return FileResponse(str(out), media_type="audio/wav")
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
 PID_FILE = Path(__file__).parent / ".server.pid"
 PORT = CONFIG.get("server", {}).get("port", 8000)
 HOST = CONFIG.get("server", {}).get("host", "0.0.0.0")
