@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pynput.mouse import Controller as MouseController, Button
 from pynput.keyboard import Controller as KeyboardController, Key
 
@@ -534,6 +534,123 @@ async def clipboard_set(request: Request):
         pass
     return {"ok": True, **data}
 
+
+# ==================== File Transfer ====================
+# Akses folder dari HP: list, download, upload. Dibatasi ke beberapa folder
+# aman untuk menghindari expose seluruh isi laptop.
+ALLOWED_DIRS = {
+    "downloads": Path.home() / "Downloads",
+    "documents": Path.home() / "Documents",
+    "fanraai": Path("C:/Users/ASUS/FanraAi"),
+    "scratch": Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch"),
+}
+MAX_UPLOAD_MB = 50
+
+
+def _resolve(folder: str, name: str) -> Path | None:
+    base = ALLOWED_DIRS.get(folder)
+    if base is None:
+        return None
+    # Cegah path traversal: nama tidak boleh mengandung .. atau path absolut
+    if not name or ".." in name.split("/") or ".." in name.split("\\") or Path(name).is_absolute():
+        return None
+    return (base / name).resolve()
+
+
+@app.get("/files/{folder}")
+async def files_list(folder: str):
+    base = ALLOWED_DIRS.get(folder)
+    if base is None:
+        return JSONResponse({"ok": False, "error": "Folder tidak diizinkan"}, status_code=403)
+    try:
+        entries = []
+        for p in sorted(base.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+            try:
+                st = p.stat()
+                entries.append({
+                    "name": p.name,
+                    "is_dir": p.is_dir(),
+                    "size": st.st_size if p.is_file() else None,
+                    "modified": int(st.st_mtime),
+                })
+            except (PermissionError, OSError):
+                continue
+        return {"ok": True, "folder": folder, "path": str(base), "entries": entries}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@app.get("/files/{folder}/{name:path}")
+async def files_download(folder: str, name: str):
+    target = _resolve(folder, name)
+    if target is None or not target.exists() or not target.is_file():
+        return JSONResponse({"ok": False, "error": "File tidak ditemukan"}, status_code=404)
+    return FileResponse(str(target), filename=target.name)
+
+
+@app.post("/files/{folder}")
+async def files_upload(folder: str, file: UploadFile = File(...)):
+    base = ALLOWED_DIRS.get(folder)
+    if base is None:
+        return JSONResponse({"ok": False, "error": "Folder tidak diizinkan"}, status_code=403)
+    # Sanitasi nama file
+    safe = Path(file.filename or "upload.bin").name
+    if not safe or safe.startswith("."):
+        safe = f"upload_{int(time.time())}"
+    target = base / safe
+    try:
+        content = await file.read()
+        if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
+            return JSONResponse(
+                {"ok": False, "error": f"File terlalu besar (maks {MAX_UPLOAD_MB}MB)"}, status_code=413
+            )
+        target.write_bytes(content)
+        return {"ok": True, "name": safe, "size": len(content)}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+# ==================== Media & Volume Control ====================
+# Kontrol media playback & volume Windows via media key pynput.
+_kb = KeyboardController()
+
+
+@app.post("/media/{action}")
+async def media_control(action: str):
+    """Aksi: play_pause, next, prev, vol_up, vol_down, mute."""
+    keys = {
+        "play_pause": Key.media_play_pause,
+        "next": Key.media_next,
+        "prev": Key.media_previous,
+        "vol_up": Key.media_volume_up,
+        "vol_down": Key.media_volume_down,
+        "mute": Key.media_volume_mute,
+    }
+    key = keys.get(action)
+    if key is None:
+        return JSONResponse({"ok": False, "error": f"Aksi tidak dikenal: {action}"}, status_code=400)
+    try:
+        _kb.press(key)
+        _kb.release(key)
+        return {"ok": True, "action": action}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@app.get("/volume")
+async def volume_get():
+    """Baca volume saat ini (0-100). Butuh pycaw; kalau tidak ada tetap jalan."""
+    try:
+        from ctypes import cast, POINTER
+        from comtypes import CLSCTX_ALL
+        from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
+        devices = AudioUtilities.GetSpeakers()
+        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        volume = cast(interface, POINTER(IAudioEndpointVolume))
+        return {"ok": True, "percent": round(volume.GetMasterVolumeLevelScalar() * 100), "muted": bool(volume.GetMute())}
+    except Exception:
+        return {"ok": True, "percent": None, "muted": None}
 
 
 PID_FILE = Path(__file__).parent / ".server.pid"
