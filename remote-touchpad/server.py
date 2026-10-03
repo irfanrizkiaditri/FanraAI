@@ -693,6 +693,64 @@ def _get_tts_model():
     return _tts_model
 
 
+# ==================== Chat History (persistent) ====================
+# Riwayat chat disimpan di server laptop, bukan di browser.
+# Survive refresh, ganti device, chat lain kali.
+CHAT_HISTORY_FILE = Path("C:/Users/ASUS/FanraAi/chat-history.json")
+_chat_lock = asyncio.Lock()
+
+
+@app.get("/chat-history")
+async def chat_history_get():
+    """Ambil seluruh riwayat chat."""
+    async with _chat_lock:
+        try:
+            if CHAT_HISTORY_FILE.exists():
+                data = json.loads(CHAT_HISTORY_FILE.read_text(encoding="utf-8"))
+                return {"ok": True, "messages": data}
+        except Exception:
+            pass
+    return {"ok": True, "messages": []}
+
+
+@app.post("/chat-history")
+async def chat_history_append(request: Request):
+    """Tambah satu pesan ke riwayat. Body: {"role": "user"|"assistant", "content": "..."}"""
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Body bukan JSON valid"}, status_code=400)
+    role = str(body.get("role", ""))
+    content = str(body.get("content", ""))
+    if role not in ("user", "assistant") or not content:
+        return JSONResponse({"ok": False, "error": "role/content tidak valid"}, status_code=400)
+    if len(content) > 100_000:
+        return JSONResponse({"ok": False, "error": "Pesan terlalu panjang"}, status_code=400)
+
+    entry = {"role": role, "content": content, "ts": int(time.time())}
+    async with _chat_lock:
+        try:
+            data = json.loads(CHAT_HISTORY_FILE.read_text(encoding="utf-8")) if CHAT_HISTORY_FILE.exists() else []
+        except Exception:
+            data = []
+        data.append(entry)
+        # Batasi 500 pesan terakhir biar file tidak membesar tanpa batas
+        data = data[-500:]
+        CHAT_HISTORY_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return {"ok": True, "entry": entry}
+
+
+@app.delete("/chat-history")
+async def chat_history_clear():
+    """Hapus seluruh riwayat."""
+    async with _chat_lock:
+        try:
+            CHAT_HISTORY_FILE.write_text("[]", encoding="utf-8")
+        except Exception:
+            pass
+    return {"ok": True}
+
+
 @app.post("/tts")
 async def text_to_speech(request: Request):
     """Body: {"text": "..."} -> audio/wav 24kHz mono."""
