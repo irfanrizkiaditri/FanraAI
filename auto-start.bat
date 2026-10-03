@@ -8,8 +8,11 @@ echo   FanraAi - Auto Start on Windows Boot
 echo ========================================
 echo.
 
-rem Wait a bit for network to be ready
+rem Tunggu network siap
 timeout /t 10 /nobreak >nul
+call "%~dp0start-tunnels.bat"
+timeout /t 25 /nobreak >nul
+call "%~dp0sync-tunnels.bat"
 
 echo [1/4] Starting PM2 daemon...
 pm2 resurrect 2>nul || echo "No saved PM2 processes, starting fresh..."
@@ -20,18 +23,19 @@ pm2 start ecosystem.config.js
 echo [3/4] Saving PM2 process list for next boot...
 pm2 save
 
-echo [4/4] Starting Cloudflare tunnels (akses publik untuk portal)...
-call "%~dp0start-tunnels.bat"
+echo [4/4] Starting tunnel watchdog (auto-heal + auto-sync)...
+start "FanraAi Tunnel Watchdog" /min "" "%~dp0tunnel-watchdog.bat"
 
 echo.
 echo ========================================
 echo   FanraAi services started on boot!
 echo ========================================
 echo.
-echo Akses:
+echo Akses lokal:
 echo   ruang (builder 3D)        : http://localhost:5173
 echo   touchpad server (WS/REST) : http://localhost:8000
 echo   touchpad dashboard        : http://localhost:3000
 echo.
-rem Keep window open for 5 seconds to show status, then close
+echo Portal baca URL tunnel dari GitHub (auto-sync tiap 60 detik).
+echo.
 timeout /t 5 /nobreak >nul
