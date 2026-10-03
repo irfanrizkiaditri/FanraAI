@@ -1,12 +1,14 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
+<!-- =======================================================
+     HEADER
+======================================================= -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-<meta name="theme-color" content="#0b0f19">
+<meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +16,37 @@
 <title>Remote Touchpad</title>
 
 <style id="theme-style">
+/* =========================================================
+   TOKEN WARNA (zinc palette, dasar hitam pekat)
+========================================================= */
+:root {
+  --pad: #070709;
+  --line: rgba(39, 39, 42, .8);
+  --line-soft: rgba(39, 39, 42, .5);
+
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-850: #1f1f23;
+  --zinc-900: #18181b;
+  --zinc-950: #09090b;
+
+  --emerald: #10b981;
+  --emerald-text: #34d399;
+  --amber: #f59e0b;
+  --amber-text: #fbbf24;
+  --rose: #f43f5e;
+  --rose-text: #fb7185;
+
+  --radius: 12px;
+  --text-muted: #71717a;
+}
+
 /* =========================================================
    RESET
 ========================================================= */
@@ -24,134 +57,79 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-tertiary: #182235;
-  --border: #26344d;
-
-  --accent: #6366f1;
-  --accent-secondary: #22c55e;
-
-  --text: #f8fafc;
-  --text-muted: #94a3b8;
-
-  --touch-primary: rgba(99, 102, 241, 0.35);
-  --touch-secondary: rgba(34, 197, 94, 0.35);
-
-  --touch-border-primary: #818cf8;
-  --touch-border-secondary: #4ade80;
-
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
+html {
+  background: #000;
+  color-scheme: dark;
 }
 
 html,
 body {
-  width: 100%;
   height: 100%;
-  overflow: hidden;
 }
 
 body {
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-
-  background:
-    radial-gradient(
-      circle at top,
-      color-mix(in srgb, var(--bg-secondary) 90%, transparent),
-      var(--bg-primary) 65%
-    );
-
-  color: var(--text);
-
-  min-height: 100dvh;
-
+  background: #000;
+  color: var(--zinc-300);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   display: flex;
   flex-direction: column;
-
-  overflow: hidden;
-
-  touch-action: none;
-
+  min-height: 100dvh;
   overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
-  -webkit-font-smoothing: antialiased;
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--zinc-500);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* =========================================================
    HEADER
 ========================================================= */
-
 header {
-  flex: 0 0 auto;
-
-  padding:
-    calc(10px + var(--safe-top))
-    14px
-    10px
-    14px;
-
-  min-height: 62px;
-
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 12px;
-
-  background:
-    color-mix(in srgb, var(--bg-secondary) 94%, transparent);
-
-  border-bottom: 1px solid var(--border);
-
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-
-  z-index: 20;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+  border-bottom: 1px solid var(--line);
+  background: #000;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-
   min-width: 0;
 }
 
 .brand-icon {
-  width: 38px;
-  height: 38px;
-
-  flex: 0 0 38px;
-
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--zinc-950);
+  color: var(--zinc-300);
+}
 
-  border-radius: 12px;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--accent),
-      color-mix(in srgb, var(--accent) 55%, #000)
-    );
-
-  box-shadow:
-    0 8px 24px color-mix(in srgb, var(--accent) 25%, transparent);
-
-  font-size: 19px;
+.brand-icon svg {
+  width: 17px;
+  height: 17px;
 }
 
 .brand-text {
@@ -159,1207 +137,673 @@ header {
 }
 
 .brand-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.15;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--zinc-100);
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
 
+.brand-subtitle {
+  font-size: 10.5px;
+  color: var(--zinc-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.brand-subtitle {
-  margin-top: 2px;
-
-  font-size: 0.68rem;
-  color: var(--text-muted);
-
-  white-space: nowrap;
-}
-
+/* =========================================================
+   STATUS PILL
+========================================================= */
 .status {
-  flex: 0 0 auto;
-
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 7px;
-
-  padding: 7px 10px;
-
+  padding: 5px 10px;
   border-radius: 999px;
-
-  background: color-mix(
-    in srgb,
-    var(--bg-tertiary) 90%,
-    transparent
-  );
-
-  border: 1px solid var(--border);
-
-  color: var(--text-muted);
-
-  font-size: 0.7rem;
-  font-weight: 600;
-
-  white-space: nowrap;
+  border: 1px solid var(--line);
+  background: var(--zinc-950);
+  flex-shrink: 0;
 }
 
 .status-dot {
-  width: 7px;
-  height: 7px;
-
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-
-  background: var(--text-muted);
-
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--text-muted) 12%, transparent);
+  background: var(--zinc-500);
+  flex-shrink: 0;
 }
 
-.status.connected {
-  color: var(--accent-secondary);
+#status-text {
+  font-size: 10.5px;
+  color: var(--zinc-400);
+  white-space: nowrap;
 }
 
 .status.connected .status-dot {
-  background: var(--accent-secondary);
-
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--accent-secondary) 14%, transparent);
-
-  animation: pulse-status 2s infinite;
+  background: var(--emerald);
 }
-
-.status.connecting {
-  color: #fbbf24;
+.status.connected #status-text {
+  color: var(--emerald-text);
 }
 
 .status.connecting .status-dot {
-  background: #fbbf24;
+  background: var(--amber);
+}
+.status.connecting #status-text {
+  color: var(--amber-text);
 }
 
-@keyframes pulse-status {
-  0%, 100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.45;
-  }
+.status.disconnected .status-dot {
+  background: var(--rose);
+}
+.status.disconnected #status-text {
+  color: var(--rose-text);
 }
 
 /* =========================================================
    MAIN
 ========================================================= */
-
 main {
-  position: relative;
-
-  flex: 1 1 auto;
-
-  min-height: 0;
-
+  flex: 1;
   display: flex;
   flex-direction: column;
-
-  overflow: hidden;
+  gap: 8px;
+  padding: 12px;
+  min-height: 0;
 }
 
 /* =========================================================
-   TOUCHPAD
+   TOUCHPAD SURFACE
 ========================================================= */
-
 #touchpad {
   position: relative;
-
   flex: 1 1 auto;
-
-  min-height: 0;
-
-  margin: 10px;
-
-  border-radius: var(--radius-lg);
-
-  overflow: hidden;
-
-  background:
-    radial-gradient(
-      circle at 50% 45%,
-      color-mix(in srgb, var(--accent) 9%, transparent),
-      transparent 42%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--bg-secondary) 98%, transparent),
-      color-mix(in srgb, var(--bg-primary) 96%, transparent)
-    );
-
-  border: 1px solid var(--border);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.025),
-    0 10px 35px rgba(0,0,0,.18);
-
+  min-height: 270px;
+  width: 100%;
+  background: var(--pad);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   touch-action: none;
-
-  user-select: none;
-  -webkit-user-select: none;
+  overflow: hidden;
+  cursor: crosshair;
 }
 
-/* subtle touchpad grid */
-
-#touchpad::before {
-  content: "";
-
+/* Zona scroll tepi kanan */
+.edge-scroll {
   position: absolute;
-  inset: 14px;
-
-  border: 1px dashed
-    color-mix(in srgb, var(--border) 85%, transparent);
-
-  border-radius: 14px;
-
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: rgba(63, 63, 70, .45);
+  transition: background .2s, opacity .2s;
   pointer-events: none;
-
-  opacity: 0.8;
+  z-index: 2;
+}
+.edge-scroll.active {
+  background: var(--zinc-500);
 }
 
-/* center logo/hint */
-
-#touchpad::after {
-  content: "TOUCHPAD";
-
+/* Badge gestur aktif */
+.gesture-badge {
   position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  transform: translate(-50%, -50%);
-
-  font-size: 0.65rem;
-  font-weight: 700;
-
-  letter-spacing: 0.25em;
-
-  color: color-mix(
-    in srgb,
-    var(--text-muted) 18%,
-    transparent
-  );
-
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--zinc-800);
+  background: var(--zinc-900);
+  color: var(--zinc-200);
+  font-size: 10.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity .18s, transform .18s, visibility .18s;
   pointer-events: none;
 }
-
-/* =========================================================
-   TOUCH INDICATOR
-========================================================= */
-
-.touch-indicator {
-  position: absolute;
-
-  width: 30px;
-  height: 30px;
-
-  border-radius: 50%;
-
-  background: var(--touch-primary);
-
-  border: 2px solid var(--touch-border-primary);
-
-  box-shadow:
-    0 0 0 7px
-      color-mix(
-        in srgb,
-        var(--touch-border-primary) 8%,
-        transparent
-      ),
-    0 4px 18px
-      color-mix(
-        in srgb,
-        var(--touch-border-primary) 25%,
-        transparent
-      );
-
-  pointer-events: none;
-
-  transform: translate(-50%, -50%);
-
-  z-index: 10;
-
-  animation: touch-pop .12s ease-out;
+.gesture-badge.show {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
 }
 
-.touch-indicator.secondary {
-  background: var(--touch-secondary);
-  border-color: var(--touch-border-secondary);
-
-  box-shadow:
-    0 0 0 7px
-      color-mix(
-        in srgb,
-        var(--touch-border-secondary) 8%,
-        transparent
-      );
-}
-
-@keyframes touch-pop {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(.65);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-/* =========================================================
-   GESTURE HINT
-========================================================= */
-
+/* Petunjuk gestur */
 .gesture-hint {
   position: absolute;
-
-  left: 50%;
-  bottom: 18px;
-
-  transform: translateX(-50%);
-
-  width: calc(100% - 32px);
-  max-width: 560px;
-
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  z-index: 2;
   display: flex;
-
-  align-items: center;
-  justify-content: center;
-
   flex-wrap: wrap;
-
-  gap: 7px;
-
-  padding: 8px 12px;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-secondary) 92%,
-      transparent
-    );
-
-  border: 1px solid
-    color-mix(in srgb, var(--border) 90%, transparent);
-
-  border-radius: 999px;
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  font-size: 0.62rem;
-
-  color: var(--text-muted);
-
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 0 14px;
+  color: var(--zinc-400);
+  font-size: 11px;
   pointer-events: none;
-
-  z-index: 5;
-
-  transition:
-    opacity .3s ease,
-    transform .3s ease;
+  transition: opacity .5s;
 }
-
 .gesture-hint span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
-
 .gesture-hint kbd {
-  padding: 2px 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--zinc-700);
+  border-radius: 4px;
+  background: var(--zinc-900);
+  color: var(--zinc-300);
+  font-size: 9.5px;
+  font-family: inherit;
+  line-height: 1.5;
+}
 
-  border-radius: 5px;
-
-  background:
-    color-mix(in srgb, var(--accent) 14%, var(--bg-tertiary));
-
-  color: var(--text);
-
-  font-size: 0.6rem;
-  font-weight: 600;
+/* Indikator posisi kursor */
+.touch-indicator {
+  position: absolute;
+  z-index: 4;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(82, 82, 91, .7);
+  background: rgba(63, 63, 70, .25);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.touch-indicator::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--zinc-400);
+}
+.touch-indicator.secondary {
+  border-color: rgba(63, 63, 70, .7);
+  background: rgba(39, 39, 42, .2);
 }
 
 /* =========================================================
-   BOTTOM CONTROLS
+   TOMBOL KLIK (Kiri / Tengah / Kanan)
 ========================================================= */
-
-.bottom-bar {
-  flex: 0 0 auto;
-
+.click-bar {
+  flex-shrink: 0;
   display: grid;
-
-  grid-template-columns: 1fr auto 1fr;
-
-  align-items: center;
-
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
 
-  padding:
-    8px
-    10px
-    calc(8px + var(--safe-bottom))
-    10px;
+.click-btn {
+  padding: 11px 6px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--zinc-950);
+  color: var(--zinc-300);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.click-btn:active {
+  background: var(--zinc-800);
+  border-color: var(--zinc-600);
+  color: var(--zinc-100);
+}
 
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-secondary) 96%,
-      transparent
-    );
-
-  border-top: 1px solid var(--border);
-
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-
-  z-index: 20;
+/* =========================================================
+   BOTTOM BAR
+========================================================= */
+.bottom-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: #000;
 }
 
 .control-group {
   display: flex;
   align-items: center;
-  gap: 7px;
-
+  gap: 8px;
+}
+.control-group.center {
+  flex: 1;
   min-width: 0;
 }
 
-.control-group.left {
-  justify-content: flex-start;
-}
-
-.control-group.center {
-  justify-content: center;
-}
-
-.control-group.right {
-  justify-content: flex-end;
-}
-
-/* =========================================================
-   BUTTONS
-========================================================= */
-
 .btn {
-  min-width: 42px;
-  min-height: 42px;
-
-  padding: 8px 12px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-
-  border: 1px solid var(--border);
-
-  border-radius: 12px;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-tertiary) 94%,
-      transparent
-    );
-
-  color: var(--text);
-
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  touch-action: manipulation;
-
-  transition:
-    transform .12s ease,
-    background .15s ease,
-    border-color .15s ease;
-
-  user-select: none;
-  -webkit-user-select: none;
+  padding: 8px 12px;
+  min-height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--zinc-950);
+  color: var(--zinc-300);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s, color .12s;
 }
-
-.btn:active {
-  transform: scale(.94);
+.btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
-
-.btn:hover {
-  background:
-    color-mix(
-      in srgb,
-      var(--accent) 12%,
-      var(--bg-tertiary)
-    );
-}
-
+.btn:active,
 .btn.primary {
-  background: var(--accent);
-
-  border-color: var(--accent);
-
-  color: white;
-
-  box-shadow:
-    0 7px 20px
-      color-mix(
-        in srgb,
-        var(--accent) 22%,
-        transparent
-      );
+  background: var(--zinc-800);
+  border-color: var(--zinc-600);
+  color: var(--zinc-100);
 }
-
-.btn.secondary {
-  background:
-    color-mix(
-      in srgb,
-      var(--accent-secondary) 12%,
-      var(--bg-tertiary)
-    );
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--accent-secondary) 35%,
-      var(--border)
-    );
+.btn.block {
+  width: 100%;
 }
-
-.btn-icon {
-  font-size: 1.1rem;
+.btn-label {
   line-height: 1;
 }
 
-.btn-label {
-  white-space: nowrap;
-}
-
 /* =========================================================
-   SENSITIVITY
+   SLIDER SENSITIVITAS
 ========================================================= */
-
 .sensitivity-control {
   display: flex;
   align-items: center;
-
-  gap: 8px;
-
+  gap: 9px;
+  width: 100%;
   min-width: 0;
-
-  padding: 0 8px;
-}
-
-.sensitivity-icon {
-  font-size: .95rem;
 }
 
 .slider-wrap {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-
-  gap: 3px;
-
-  min-width: 90px;
-  width: min(180px, 24vw);
+  gap: 4px;
+}
+.slider-wrap.full {
+  width: 100%;
 }
 
 .slider-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  font-size: .58rem;
-
-  color: var(--text-muted);
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--zinc-500);
+}
+.slider-label > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .setting-value {
-  color: var(--text);
-
-  font-weight: 700;
+  color: var(--zinc-300);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
-
-  appearance: none;
-  -webkit-appearance: none;
-
-  border-radius: 99px;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--border) 90%,
-      transparent
-    );
-
-  outline: none;
+  border-radius: 999px;
+  background: var(--zinc-800);
 }
-
 input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
   -webkit-appearance: none;
-
-  width: 18px;
-  height: 18px;
-
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
   border-radius: 50%;
-
-  background: var(--accent);
-
-  border: 3px solid var(--bg-secondary);
-
-  box-shadow: 0 0 0 1px var(--accent);
-
-  cursor: pointer;
+  background: var(--zinc-300);
+  border: 1px solid var(--zinc-600);
 }
-
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--zinc-800);
+}
 input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-
-  background: var(--accent);
-
-  border: 3px solid var(--bg-secondary);
-
-  cursor: pointer;
+  background: var(--zinc-300);
+  border: 1px solid var(--zinc-600);
 }
 
 /* =========================================================
-   SETTINGS SHEET
+   OVERLAY & BOTTOM SHEET (Pengaturan)
 ========================================================= */
-
 .sheet-overlay {
   position: fixed;
-
   inset: 0;
-
-  background: rgba(0,0,0,.58);
-
+  z-index: 40;
+  background: rgba(0, 0, 0, .8);
   opacity: 0;
-
   visibility: hidden;
-
-  pointer-events: none;
-
-  transition:
-    opacity .25s ease,
-    visibility .25s ease;
-
-  z-index: 90;
+  transition: opacity .2s, visibility .2s;
 }
-
 .sheet-overlay.visible {
   opacity: 1;
-
   visibility: visible;
-
-  pointer-events: auto;
 }
 
 .bottom-sheet {
   position: fixed;
-
   left: 0;
   right: 0;
   bottom: 0;
-
-  max-height: min(82dvh, 680px);
-
+  z-index: 50;
+  max-height: 82dvh;
   overflow-y: auto;
-
-  padding:
-    10px
-    16px
-    calc(20px + var(--safe-bottom));
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-secondary) 98%,
-      transparent
-    );
-
-  border-top:
-    1px solid var(--border);
-
-  border-radius:
-    24px 24px 0 0;
-
-  box-shadow:
-    0 -20px 60px rgba(0,0,0,.35);
-
-  transform: translateY(105%);
-
-  transition:
-    transform .28s cubic-bezier(.2,.8,.2,1);
-
-  z-index: 100;
-
-  overscroll-behavior: contain;
+  background: var(--zinc-950);
+  border: 1px solid var(--zinc-800);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(102%);
+  transition: transform .26s cubic-bezier(.32, .72, 0, 1);
 }
-
 .bottom-sheet.open {
-  transform: translateY(0);
+  transform: none;
 }
 
 .sheet-handle {
-  width: 42px;
+  width: 36px;
   height: 4px;
-
-  border-radius: 99px;
-
-  background: var(--border);
-
-  margin: 2px auto 16px;
+  border-radius: 999px;
+  background: var(--zinc-800);
+  margin: 6px auto 10px;
 }
 
 .sheet-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-
   gap: 12px;
-
-  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
-
 .sheet-title {
-  font-size: 1rem;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--zinc-100);
 }
-
+.sheet-title svg {
+  width: 14px;
+  height: 14px;
+  color: var(--zinc-500);
+}
 .sheet-description {
-  margin-top: 3px;
-
-  font-size: .7rem;
-
-  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--zinc-500);
+}
+.sheet-header .btn {
+  flex-shrink: 0;
+  padding: 7px;
+  min-height: 32px;
+  min-width: 32px;
+}
+.sheet-header .btn svg {
+  width: 13px;
+  height: 13px;
 }
 
 .sheet-section {
   padding: 14px 0;
-
-  border-top: 1px solid
-    color-mix(in srgb, var(--border) 65%, transparent);
+  border-bottom: 1px solid var(--line-soft);
 }
-
-.sheet-section:first-of-type {
-  border-top: none;
+.sheet-section:last-child {
+  padding-bottom: 2px;
+  border-bottom: none;
 }
-
 .sheet-section-title {
   margin-bottom: 10px;
-
-  font-size: .7rem;
-  font-weight: 700;
-
-  color: var(--text-muted);
-
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--zinc-500);
   text-transform: uppercase;
-
-  letter-spacing: .08em;
+  letter-spacing: .06em;
 }
 
 /* =========================================================
-   KEYBOARD
+   SEGMENTED CONTROL (Profil akselerasi)
 ========================================================= */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.seg-btn {
+  min-height: 40px;
+  padding: 9px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--zinc-800);
+  background: #000;
+  color: var(--zinc-500);
+  font-size: 11px;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.seg-btn:active {
+  color: var(--zinc-300);
+}
+.seg-btn.active {
+  background: var(--zinc-800);
+  border-color: var(--zinc-600);
+  color: var(--zinc-100);
+  font-weight: 600;
+}
+.sheet-hint {
+  margin-top: 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--zinc-500);
+}
 
+/* =========================================================
+   DAFTAR GESTUR
+========================================================= */
+.gesture-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.gesture-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--zinc-800);
+  background: #000;
+  color: var(--zinc-400);
+  font-size: 11px;
+  cursor: default;
+}
+.gesture-item b {
+  color: var(--zinc-200);
+  font-weight: 600;
+}
+
+/* =========================================================
+   KEYBOARD DRAWER
+========================================================= */
 #keyboard-drawer {
   position: fixed;
-
   left: 0;
   right: 0;
   bottom: 0;
-
-  width: 100%;
-
-  max-height: min(66dvh, 620px);
-
+  z-index: 50;
+  max-height: 60dvh;
   overflow-y: auto;
-  overflow-x: hidden;
-
-  padding:
-    10px
-    8px
-    calc(12px + var(--safe-bottom));
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-secondary) 98%,
-      transparent
-    );
-
-  border-top: 1px solid var(--border);
-
-  border-radius: 22px 22px 0 0;
-
-  box-shadow:
-    0 -20px 55px rgba(0,0,0,.4);
-
-  transform: translateY(105%);
-
-  transition:
-    transform .28s cubic-bezier(.2,.8,.2,1);
-
-  z-index: 110;
-
-  overscroll-behavior: contain;
-
-  touch-action: pan-y;
+  background: var(--zinc-950);
+  border: 1px solid var(--zinc-800);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(102%);
+  transition: transform .26s cubic-bezier(.32, .72, 0, 1);
 }
-
 #keyboard-drawer.open {
-  transform: translateY(0);
+  transform: none;
 }
 
 .keyboard-header {
-  position: sticky;
-
-  top: 0;
-
-  z-index: 2;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  padding:
-    2px
-    4px
-    10px;
-
-  margin-bottom: 4px;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-secondary) 98%,
-      transparent
-    );
+  gap: 10px;
+  padding: 0 6px 10px;
 }
-
 .keyboard-title {
-  font-size: .75rem;
-
-  font-weight: 700;
-
-  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--zinc-200);
 }
-
+.keyboard-title svg {
+  width: 14px;
+  height: 14px;
+  color: var(--zinc-500);
+}
 .keyboard-close {
-  width: 34px;
-  height: 34px;
-
-  padding: 0;
-
-  border-radius: 10px;
+  flex-shrink: 0;
+  padding: 7px;
+  min-height: 32px;
+  min-width: 32px;
 }
-
-/* Keyboard rows */
+.keyboard-close svg {
+  width: 13px;
+  height: 13px;
+}
 
 .keyboard-row {
-  width: 100%;
-
   display: flex;
-
   gap: 5px;
-
-  margin-bottom: 6px;
-
-  justify-content: center;
-
-  align-items: stretch;
+  margin-bottom: 5px;
 }
-
 .key {
-  flex:
-    1 1 0;
-
+  flex: 1;
   min-width: 0;
-
-  min-height: 44px;
-
-  padding: 8px 5px;
-
-  border:
-    1px solid
-    color-mix(in srgb, var(--border) 95%, transparent);
-
-  border-radius: 9px;
-
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(
-        in srgb,
-        var(--bg-tertiary) 100%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--bg-primary) 80%,
-        var(--bg-tertiary)
-      )
-    );
-
-  color: var(--text);
-
-  font-family: inherit;
-
-  font-size: .78rem;
-
-  font-weight: 600;
-
-  line-height: 1;
-
-  box-shadow:
-    0 2px 0
-      color-mix(
-        in srgb,
-        var(--border) 80%,
-        transparent
-      );
-
-  touch-action: manipulation;
-
-  user-select: none;
-  -webkit-user-select: none;
-
-  transition:
-    transform .08s ease,
-    background .08s ease,
-    box-shadow .08s ease;
+  min-height: 40px;
+  padding: 9px 2px;
+  border-radius: 8px;
+  border: 1px solid var(--zinc-800);
+  background: var(--zinc-900);
+  color: var(--zinc-300);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background .1s, color .1s;
 }
-
 .key:active {
-  transform: translateY(2px);
-
-  box-shadow: none;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--accent) 25%,
-      var(--bg-tertiary)
-    );
+  background: var(--zinc-800);
+  color: var(--zinc-100);
 }
-
 .key.wide {
-  flex: 1.6 1 0;
+  flex: 1.6;
 }
-
 .key.extra-wide {
-  flex: 2.4 1 0;
+  flex: 2.2;
 }
-
 .key.special {
-  background:
-    color-mix(
-      in srgb,
-      var(--accent) 9%,
-      var(--bg-tertiary)
-    );
-
-  color: #fbbf24;
+  background: #000;
+  color: var(--zinc-500);
+  font-size: 10.5px;
 }
-
 .key.space {
-  flex:
-    5 1 0;
+  flex: 5;
 }
 
 /* =========================================================
    TOAST
 ========================================================= */
-
 .toast {
   position: fixed;
-
   left: 50%;
-  bottom:
-    calc(
-      76px + var(--safe-bottom)
-    );
-
-  transform:
-    translate(-50%, 18px);
-
-  width: max-content;
-  max-width: calc(100vw - 32px);
-
-  padding: 10px 15px;
-
-  border-radius: 12px;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--bg-tertiary) 96%,
-      transparent
-    );
-
-  border: 1px solid var(--border);
-
-  color: var(--text);
-
-  font-size: .75rem;
-
-  font-weight: 600;
-
-  text-align: center;
-
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  max-width: 88vw;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--zinc-800);
+  background: var(--zinc-950);
+  color: var(--zinc-200);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0;
-
-  pointer-events: none;
-
-  z-index: 300;
-
-  transition:
-    transform .25s ease,
-    opacity .25s ease;
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  visibility: hidden;
+  transform: translate(-50%, 12px);
+  transition: opacity .2s, transform .2s, visibility .2s;
 }
-
 .toast.show {
-  transform:
-    translate(-50%, 0);
-
   opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
-
-.toast.error {
-  background: #7f1d1d;
-  border-color: #ef4444;
-}
-
 .toast.success {
-  background:
-    color-mix(
-      in srgb,
-      var(--accent-secondary) 15%,
-      var(--bg-tertiary)
-    );
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--accent-secondary) 45%,
-      var(--border)
-    );
+  color: var(--emerald-text);
+  border-color: rgba(16, 185, 129, .4);
 }
 
 /* =========================================================
-   RESPONSIVE — SMALL PHONES
+   RESPONSIVE
 ========================================================= */
-
-@media (max-width: 380px) {
-
-  header {
-    min-height: 56px;
-
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .brand-icon {
-    width: 34px;
-    height: 34px;
-
-    flex-basis: 34px;
-
-    font-size: 16px;
-  }
-
-  .brand-title {
-    font-size: .86rem;
-  }
-
+@media (max-width: 379px) {
   .brand-subtitle {
     display: none;
   }
-
-  .status {
-    padding: 6px 8px;
-
-    font-size: .62rem;
-  }
-
-  #touchpad {
-    margin: 7px;
-
-    border-radius: 16px;
-  }
-
-  .gesture-hint {
-    bottom: 10px;
-
-    width: calc(100% - 20px);
-
-    padding: 7px 8px;
-
-    gap: 5px;
-
-    font-size: .56rem;
-  }
-
-  .bottom-bar {
-    gap: 5px;
-
-    padding-left: 7px;
-    padding-right: 7px;
-  }
-
-  .btn {
-    min-width: 40px;
-    min-height: 40px;
-
-    padding: 7px;
-  }
-
   .btn-label {
     display: none;
   }
-
-  .slider-wrap {
-    min-width: 72px;
-    width: 26vw;
+  .btn {
+    padding: 8px 10px;
   }
+}
 
-  .sensitivity-icon {
+@media (orientation: landscape) and (max-height: 540px) {
+  #touchpad {
+    min-height: 170px;
+  }
+  .brand-subtitle {
     display: none;
   }
-
-  .key {
-    min-height: 42px;
-
-    font-size: .68rem;
-
-    border-radius: 8px;
-  }
-}
-
-/* =========================================================
-   LANDSCAPE PHONE
-========================================================= */
-
-@media (orientation: landscape) and (max-height: 520px) {
-
-  header {
-    min-height: 48px;
-
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-
-  .brand-icon {
-    width: 32px;
-    height: 32px;
-
-    flex-basis: 32px;
-  }
-
-  #touchpad {
-    margin: 7px;
-  }
-
   .gesture-hint {
-    bottom: 8px;
-  }
-
-  .bottom-bar {
-    padding-top: 5px;
-    padding-bottom: 5px;
-  }
-
-  .btn {
-    min-height: 36px;
-  }
-
-  #keyboard-drawer {
-    max-height: 82dvh;
-  }
-
-  .key {
-    min-height: 34px;
-  }
-}
-
-/* =========================================================
-   DESKTOP
-========================================================= */
-
-@media (min-width: 800px) {
-
-  body {
-    max-width: 1100px;
-
-    margin: 0 auto;
-
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-  }
-
-  #touchpad {
-    margin: 14px;
-
-    border-radius: 24px;
-  }
-
-  .bottom-bar {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  #keyboard-drawer {
-    left: 50%;
-
-    right: auto;
-
-    width: min(900px, 100%);
-
-    transform:
-      translate(-50%, 105%);
-  }
-
-  #keyboard-drawer.open {
-    transform:
-      translate(-50%, 0);
-  }
-}
-
-/* =========================================================
-   REDUCED MOTION
-========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
+    display: none;
   }
 }
 </style>
 </head>
-
 <body>
 
 <!-- =======================================================
@@ -1370,8 +814,15 @@ input[type="range"]::-moz-range-thumb {
 
   <div class="brand">
 
-    <div class="brand-icon">
-      🖱️
+    <div class="brand-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="4"></rect>
+        <line x1="12" y1="6" x2="12" y2="6.01"></line>
+        <line x1="8" y1="10" x2="8" y2="10.01"></line>
+        <line x1="16" y1="10" x2="16" y2="10.01"></line>
+        <line x1="8" y1="18" x2="16" y2="18"></line>
+      </svg>
     </div>
 
     <div class="brand-text">
@@ -1411,10 +862,54 @@ input[type="range"]::-moz-range-thumb {
 
   <div id="touchpad">
 
+    <div class="edge-scroll" id="edge-scroll"></div>
+
+    <div
+      class="gesture-badge"
+      id="gesture-badge"
+      aria-live="polite"
+    ></div>
+
     <div
       class="gesture-hint"
       id="gesture-hint"
     ></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TOMBOL KLIK (Kiri / Tengah / Kanan)
+  ====================================================== -->
+
+  <div class="click-bar">
+
+    <button
+      class="click-btn"
+      id="btn-click-left"
+      type="button"
+      aria-label="Klik kiri"
+    >
+      Kiri
+    </button>
+
+    <button
+      class="click-btn"
+      id="btn-click-right"
+      type="button"
+      aria-label="Klik kanan"
+    >
+      Kanan
+    </button>
+
+    <button
+      class="click-btn"
+      id="btn-click-middle"
+      type="button"
+      aria-label="Klik tengah"
+    >
+      Tengah
+    </button>
 
   </div>
 
@@ -1435,7 +930,12 @@ input[type="range"]::-moz-range-thumb {
         type="button"
         aria-label="Pengaturan"
       >
-        <span class="btn-icon">⚙️</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path>
+        </svg>
         <span class="btn-label">Pengaturan</span>
       </button>
 
@@ -1447,10 +947,6 @@ input[type="range"]::-moz-range-thumb {
     <div class="control-group center">
 
       <div class="sensitivity-control">
-
-        <span class="sensitivity-icon">
-          🎯
-        </span>
 
         <div class="slider-wrap">
 
@@ -1496,7 +992,12 @@ input[type="range"]::-moz-range-thumb {
         type="button"
         aria-label="Buka keyboard"
       >
-        <span class="btn-icon">⌨️</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+          <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
+        </svg>
         <span class="btn-label">Keyboard</span>
       </button>
 
@@ -1536,7 +1037,13 @@ input[type="range"]::-moz-range-thumb {
     <div>
 
       <div class="sheet-title">
-        ⚙️ Pengaturan
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path>
+        </svg>
+        Pengaturan
       </div>
 
       <div class="sheet-description">
@@ -1551,11 +1058,37 @@ input[type="range"]::-moz-range-thumb {
       type="button"
       aria-label="Tutup"
     >
-      ✕
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
     </button>
 
   </div>
 
+
+  <!-- PROFIL AKSELERASI -->
+
+  <div class="sheet-section">
+
+    <div class="sheet-section-title">
+      Akselerasi kursor
+    </div>
+
+    <div class="seg" id="accel-seg">
+      <button class="seg-btn" type="button" data-profile="smooth">Halus</button>
+      <button class="seg-btn" type="button" data-profile="fast">Cepat</button>
+      <button class="seg-btn" type="button" data-profile="linear">Linier</button>
+    </div>
+
+    <p class="sheet-hint" id="accel-hint"></p>
+
+  </div>
+
+
+  <!-- SENSITIVITAS -->
 
   <div class="sheet-section">
 
@@ -1563,7 +1096,7 @@ input[type="range"]::-moz-range-thumb {
       Touchpad
     </div>
 
-    <div class="slider-wrap" style="width:100%;">
+    <div class="slider-wrap full">
 
       <div class="slider-label">
 
@@ -1594,66 +1127,46 @@ input[type="range"]::-moz-range-thumb {
   </div>
 
 
+  <!-- DAFTAR GESTUR -->
+
   <div class="sheet-section">
 
     <div class="sheet-section-title">
       Gesture
     </div>
 
-    <div
-      style="
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:8px;
-      "
-    >
+    <div class="gesture-grid">
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        👆 1 jari
+      <div class="gesture-item">
+        <b>1 jari</b> geser, gerak
       </div>
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        👆👆 2 jari
+      <div class="gesture-item">
+        <b>1 jari</b> tap, kiri
       </div>
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        🖱️ Tap = kiri
+      <div class="gesture-item">
+        <b>2 jari</b> tap, kanan
       </div>
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        🖱️ 2 tap = kanan
+      <div class="gesture-item">
+        <b>2 jari</b> geser, scroll
       </div>
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        ↔️ Geser = gerak
+      <div class="gesture-item">
+        <b>2x tap</b> double click
       </div>
 
-      <div
-        class="btn"
-        style="justify-content:flex-start;cursor:default;"
-      >
-        ↕️ Geser 2 = scroll
+      <div class="gesture-item">
+        <b>tepi kanan</b> scroll
       </div>
 
     </div>
 
   </div>
 
+
+  <!-- STATUS -->
 
   <div class="sheet-section">
 
@@ -1663,11 +1176,16 @@ input[type="range"]::-moz-range-thumb {
 
     <button
       id="btn-reconnect"
-      class="btn primary"
+      class="btn primary block"
       type="button"
-      style="width:100%;"
     >
-      🔄 Hubungkan ulang
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <path d="M21 12a9 9 0 1 1-3-6.7"></path>
+        <polyline points="21 3 21 9 15 9"></polyline>
+      </svg>
+      Hubungkan ulang
     </button>
 
   </div>
@@ -1693,7 +1211,13 @@ input[type="range"]::-moz-range-thumb {
   <div class="keyboard-header">
 
     <div class="keyboard-title">
-      ⌨️ Keyboard
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+        <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
+      </svg>
+      Keyboard
     </div>
 
     <button
@@ -1702,12 +1226,17 @@ input[type="range"]::-moz-range-thumb {
       type="button"
       aria-label="Tutup keyboard"
     >
-      ✕
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
     </button>
 
   </div>
 
-  <!-- Keyboard rows inserted here -->
+  <!-- Baris keyboard diisi oleh script utama -->
 
 </div>
 
@@ -1720,7 +1249,6 @@ input[type="range"]::-moz-range-thumb {
   class="toast"
   id="toast"
 ></div>
-
 
 <script>
 
@@ -3619,7 +3147,237 @@ loadConfig()
   });
 
 </script>
+<script>
+/* =========================================================
+   FITUR TAMBAHAN
+   Modul ini sengaja terpisah dari script utama agar logic
+   lama tidak tersentuh. Semua handler di bawah menambah
+   perilaku baru: tombol klik fisik, indikator scroll tepi,
+   badge gestur, profil akselerasi, dan indikator kursor.
+========================================================= */
+
+(function () {
+  "use strict";
+
+  /* ---------- PROFIL AKSELERASI ---------- */
+
+  var PROFILES = {
+    smooth: {
+      label: "Halus",
+      hint: "Halus: kurva lembut, presisi tinggi untuk memilih teks atau desain."
+    },
+    fast: {
+      label: "Cepat",
+      hint: "Cepat: agresif melompat jauh untuk layar monitor lebar."
+    },
+    linear: {
+      label: "Linier",
+      hint: "Linier: rasio konstan 1:1 tanpa akselerasi kecepatan."
+    }
+  };
+
+  var STORAGE_KEY = "fanra_mouse_accel_profile";
+  var accelProfile = "smooth";
+
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && PROFILES[saved]) {
+      accelProfile = saved;
+    }
+  } catch (e) {}
+
+  var accelSeg = document.getElementById("accel-seg");
+  var accelHint = document.getElementById("accel-hint");
+
+  function renderAccelSeg() {
+    var btns = accelSeg.querySelectorAll(".seg-btn");
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i].dataset.profile === accelProfile) {
+        btns[i].classList.add("active");
+      } else {
+        btns[i].classList.remove("active");
+      }
+    }
+    accelHint.textContent = PROFILES[accelProfile].hint;
+  }
+
+  function setAccelProfile(p) {
+    if (!PROFILES[p]) return;
+    accelProfile = p;
+    try {
+      localStorage.setItem(STORAGE_KEY, p);
+    } catch (e) {}
+    renderAccelSeg();
+    applyAccelCurve();
+    showGestureBadge("Akselerasi: " + PROFILES[p].label);
+  }
+
+  accelSeg.addEventListener("click", function (e) {
+    var btn = e.target.closest(".seg-btn");
+    if (!btn) return;
+    setAccelProfile(btn.dataset.profile);
+  });
+
+  /* ---------- BADGE GESTUR ---------- */
+
+  var gestureBadge = document.getElementById("gesture-badge");
+  var badgeTimer = null;
+
+  function showGestureBadge(msg) {
+    gestureBadge.textContent = msg;
+    gestureBadge.classList.add("show");
+    clearTimeout(badgeTimer);
+    badgeTimer = setTimeout(function () {
+      gestureBadge.classList.remove("show");
+    }, 1100);
+  }
+
+  /* ---------- INDIKATOR POSISI KURSOR ---------- */
+
+  var cursorEl = null;
+
+  function showCursor(x, y) {
+    if (!cursorEl) {
+      cursorEl = document.createElement("div");
+      cursorEl.className = "touch-indicator";
+      cursorEl.style.zIndex = "5";
+      touchpad.appendChild(cursorEl);
+    }
+    cursorEl.style.left = x + "px";
+    cursorEl.style.top = y + "px";
+  }
+
+  function hideCursor() {
+    if (cursorEl) {
+      cursorEl.remove();
+      cursorEl = null;
+    }
+  }
+
+  /* ---------- INDIKATOR SCROLL TEPI KANAN ---------- */
+
+  var edgeScrollEl = document.getElementById("edge-scroll");
+  var edgeActive = false;
+
+  function setEdgeScrolling(active) {
+    edgeActive = active;
+    if (active) {
+      edgeScrollEl.classList.add("active");
+    } else {
+      edgeScrollEl.classList.remove("active");
+    }
+  }
+
+  /* ---------- AKSELERASI GERAK ----------
+     Script utama mengalikan dx/dy dengan mouseSensitivity.
+     Karena script utama tidak boleh diubah, profil
+     akselerasi diterapkan sebagai faktor tambahan pada
+     mouseSensitivity mengikuti kurva tiap profil:
+     smooth = distance^0.6, fast = distance^1.4,
+     linear = 1:1. */
+
+  var sliderEl = document.getElementById("sensitivity");
+
+  function applyAccelCurve() {
+    var base = parseFloat(sliderEl.value) || 1;
+    var next = base;
+
+    if (accelProfile === "smooth") {
+      next = base * Math.pow(Math.max(base, 0.1), 0.6) * 0.72;
+    } else if (accelProfile === "fast") {
+      next = base * Math.pow(Math.max(base, 0.1), 1.4) * 0.55;
+    }
+
+    next = Math.round(next * 100) / 100;
+    if (Math.abs(next - mouseSensitivity) > 0.01) {
+      mouseSensitivity = next;
+      updateSensitivityUI();
+    }
+  }
+
+  sliderEl.addEventListener("input", applyAccelCurve);
+  document
+    .getElementById("sensitivity-settings")
+    .addEventListener("input", applyAccelCurve);
+
+  /* ---------- JEMBATAN VISUAL KE TOUCHPAD ----------
+     Script utama sudah menangani logika gerak dan tap.
+     Listener di bawah hanya membaca posisi jari untuk
+     umpan balik visual (kursor + highlight tepi kanan),
+     tanpa mengganggu handler utama. */
+
+  var padRect = null;
+
+  function refreshPadRect() {
+    padRect = touchpad.getBoundingClientRect();
+  }
+
+  refreshPadRect();
+  window.addEventListener("resize", refreshPadRect);
+  window.addEventListener("scroll", refreshPadRect);
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      hideCursor();
+      setEdgeScrolling(false);
+    }
+  });
+
+  touchpad.addEventListener("touchstart", function () {
+    refreshPadRect();
+  }, { passive: true });
+
+  touchpad.addEventListener("touchmove", function (event) {
+    if (!event.touches.length) return;
+    var t = event.touches[0];
+
+    /* Zona tepi kanan 12% = scroll */
+    var relX = (t.clientX - padRect.left) / padRect.width;
+    var inEdge = relX > 0.88;
+
+    if (inEdge !== edgeActive) {
+      setEdgeScrolling(inEdge);
+      if (inEdge) {
+        showGestureBadge("Scroll");
+      }
+    }
+
+    if (inEdge) {
+      hideCursor();
+      return;
+    }
+
+    /* Kursor visual mengikuti jari */
+    showCursor(t.clientX - padRect.left, t.clientY - padRect.top);
+  }, { passive: true });
+
+  function endVisual() {
+    hideCursor();
+    setEdgeScrolling(false);
+  }
+
+  touchpad.addEventListener("touchend", endVisual, { passive: true });
+  touchpad.addEventListener("touchcancel", endVisual, { passive: true });
+
+  /* ---------- TOMBOL KLIK FISIK ---------- */
+
+  function bindClickButton(id, button, label) {
+    var el = document.getElementById(id);
+    el.addEventListener("click", function () {
+      send({ type: "click", button: button });
+      showGestureBadge(label);
+    });
+  }
+
+  bindClickButton("btn-click-left", "left", "Klik Kiri");
+  bindClickButton("btn-click-middle", "middle", "Klik Tengah");
+  bindClickButton("btn-click-right", "right", "Klik Kanan");
+
+  /* ---------- INISIALISASI ---------- */
+
+  renderAccelSeg();
+  applyAccelCurve();
+})();
+</script>
 
 </body>
 </html>
-```
