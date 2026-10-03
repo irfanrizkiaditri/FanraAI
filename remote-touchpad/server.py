@@ -15,12 +15,15 @@ import asyncio
 import json
 import os
 import signal
+import subprocess
 import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
+import cv2
+import psutil
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -780,6 +783,171 @@ async def text_to_speech(request: Request):
         return FileResponse(str(out), media_type="audio/wav")
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+# ==================== Task Manager ====================
+@app.get("/processes")
+async def list_processes():
+    """Daftar proses yang aktif, diurutkan berdasarkan RAM."""
+    try:
+        procs = []
+        for p in psutil.process_iter(['pid', 'name', 'memory_info', 'cpu_percent']):
+            try:
+                mem = p.info['memory_info']
+                procs.append({
+                    "pid": p.info['pid'],
+                    "name": p.info['name'] or "?",
+                    "ram_mb": round(mem.rss / 1024 / 1024, 1) if mem else 0,
+                    "cpu": p.info['cpu_percent'] or 0,
+                })
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        procs.sort(key=lambda x: x["ram_mb"], reverse=True)
+        return {"ok": True, "processes": procs[:60]}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@app.post("/processes/kill")
+async def kill_process(request: Request):
+    """Hentikan proses berdasarkan PID. Body: {"pid": 1234}"""
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Body bukan JSON valid"}, status_code=400)
+    try:
+        pid = int(body.get("pid", 0))
+    except (TypeError, ValueError):
+        return JSONResponse({"ok": False, "error": "PID tidak valid"}, status_code=400)
+    if pid <= 4:
+        return JSONResponse({"ok": False, "error": "PID sistem tidak boleh dihentikan"}, status_code=400)
+    # Daftar proses kritikal yang tidak boleh dimatikan
+    try:
+        proc = psutil.Process(pid)
+        name = (proc.name() or "").lower()
+        critical = ("pm2", "node.exe", "python.exe", "brave", "explorer", "dwm", "svchost", "csrss", "wininit", "services")
+        if any(c in name for c in critical):
+            return JSONResponse({"ok": False, "error": f"Proses '{name}' diblokir (sistem/kritis)"}, status_code=403)
+        proc.terminate()
+        gone = proc.wait(timeout=5)
+        return {"ok": True, "killed": True, "pid": pid}
+    except psutil.NoSuchProcess:
+        return JSONResponse({"ok": False, "error": "Proses tidak ditemukan"}, status_code=404)
+    except psutil.AccessDenied:
+        return JSONResponse({"ok": False, "error": "Akses ditolak (butuh admin)"}, status_code=403)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+# ==================== Remote Terminal ====================
+# Menyimpan working directory per-sesi (default: home user)
+_terminal_cwd = str(Path.home())
+
+
+@app.post("/terminal")
+async def run_terminal(request: Request):
+    """Jalankan command shell di laptop. Body: {"cmd": "..."}"""
+    global _terminal_cwd
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Body bukan JSON valid"}, status_code=400)
+    cmd = str(body.get("cmd", "")).strip()
+    if not cmd:
+        return JSONResponse({"ok": False, "error": "Command tidak boleh kosong"}, status_code=400)
+    if len(cmd) > 5000:
+        return JSONResponse({"ok": False, "error": "Command terlalu panjang"}, status_code=400)
+
+    # Block command berbahaya
+    blocked = ("format ", "del /f", "rd /s", "shutdown", "reg delete", "diskpart")
+    low = cmd.lower()
+    if low.startswith(blocked) or any(b in low for b in ("rm -rf /", "mkfs")):
+        return JSONResponse({"ok": False, "error": "Command diblokir (berbahaya)"}, status_code=403)
+
+    # Handle cd khusus karena subprocess tidak persist cwd
+    if low.startswith("cd ") or low == "cd":
+        parts = cmd[3:].strip() if low.startswith("cd ") else ""
+        if not parts:
+            return {"ok": True, "output": _terminal_cwd, "cwd": _terminal_cwd}
+        new_path = Path(parts) if Path(parts).is_absolute() else Path(_terminal_cwd) / parts
+        try:
+            new_path = new_path.resolve()
+            if new_path.is_dir():
+                _terminal_cwd = str(new_path)
+                return {"ok": True, "output": "", "cwd": _terminal_cwd}
+            return {"ok": False, "error": f"Direktori tidak ditemukan: {parts}"}, 400
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+    try:
+        # Jalankan via cmd.exe /c agar command Windows native jalan
+        result = subprocess.run(
+            ["cmd.exe", "/c", cmd],
+            cwd=_terminal_cwd,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            shell=False,
+        )
+        output = (result.stdout or "") + (result.stderr or "")
+        if not output:
+            output = "(tidak ada output)"
+        # Batasi output
+        if len(output) > 20000:
+            output = output[:20000] + "\n...(output dipotong)"
+        return {"ok": True, "output": output, "cwd": _terminal_cwd}
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"ok": False, "error": "Command timeout (maks 30 detik)"}, status_code=504)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+# ==================== Webcam Viewer ====================
+_webcam_lock = asyncio.Lock()
+_webcam_device = None
+
+
+def _find_webcam_device():
+    """Cari device index webcam pertama yang tersedia."""
+    global _webcam_device
+    if _webcam_device is not None:
+        return _webcam_device
+    for i in range(5):
+        cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+        if cap.isOpened():
+            cap.release()
+            _webcam_device = i
+            return i
+        cap.release()
+    return None
+
+
+@app.get("/webcam")
+async def webcam_snapshot():
+    """Ambil satu frame dari webcam laptop."""
+    async with _webcam_lock:
+        tmp = Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch/webcam.jpg")
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            dev = _find_webcam_device()
+            if dev is None:
+                return JSONResponse({"ok": False, "error": "Webcam tidak ditemukan"}, status_code=404)
+            cap = cv2.VideoCapture(dev, cv2.CAP_DSHOW)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            # Buang beberapa frame pertama biar eksposur benar
+            for _ in range(8):
+                cap.read()
+            ok, frame = cap.read()
+            cap.release()
+            if not ok or frame is None:
+                return JSONResponse({"ok": False, "error": "Gagal mengambil frame webcam"}, status_code=500)
+            # Mirror biar natural kayak cermin
+            frame = cv2.flip(frame, 1)
+            cv2.imwrite(str(tmp), frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            return FileResponse(str(tmp), media_type="image/jpeg")
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 PID_FILE = Path(__file__).parent / ".server.pid"
