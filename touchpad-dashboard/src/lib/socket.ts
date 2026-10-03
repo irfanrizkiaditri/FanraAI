@@ -29,6 +29,20 @@ class RemoteSocketManager {
       if (savedUrl) {
         this.url = savedUrl;
       }
+      // Auto-connect ke server touchpad default saat dashboard pertama kali dibuka.
+      // Tanpa ini status selalu "Standalone" dan kontrol mouse tidak pernah terkirim.
+      const publicWs = process.env.NEXT_PUBLIC_TOUCHPAD_WS;
+      if (publicWs) {
+        this.url = publicWs;
+      } else if (!this.url) {
+        const secure = window.location.protocol === 'https:';
+        const host = window.location.hostname; // tanpa port
+        const proto = secure ? 'wss' : 'ws';
+        // Akses langsung di WiFi rumah: pakai port 8000 server touchpad
+        this.url = `${proto}://${host}:8000/ws`;
+      }
+      // Sambungkan setelah load agar tidak memblokir render
+      setTimeout(() => this.connect(), 100);
     }
   }
 
@@ -108,6 +122,17 @@ class RemoteSocketManager {
       this.ws.onerror = () => {
         this.state = 'disconnected';
         this.notify();
+      };
+      // Balas ping server agar koneksi tidak dianggap timeout
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(typeof event.data === 'string' ? event.data : '');
+          if (msg?.type === 'ping' && this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'pong', t: Date.now() }));
+          }
+        } catch {
+          // Bukan JSON, abaikan
+        }
       };
     } catch {
       this.state = 'disconnected';

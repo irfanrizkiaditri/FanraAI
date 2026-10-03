@@ -23,6 +23,7 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pynput.mouse import Controller as MouseController, Button
 from pynput.keyboard import Controller as KeyboardController, Key
@@ -124,6 +125,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Remote Touchpad", lifespan=lifespan)
+
+# Izinkan dashboard (host/port berbeda, termasuk via tunnel) mengakses server touchpad.
+# Tanpa ini browser memblokir WebSocket & fetch dari origin lain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load HTML template at startup
 with open("templates/index.html", "r", encoding="utf-8") as f:

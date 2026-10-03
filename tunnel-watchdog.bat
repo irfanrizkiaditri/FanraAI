@@ -9,7 +9,7 @@ set REPO=C:\Users\ASUS\FanraAi
 
 :LOOP
 
-for %%S in (ruang touchpad dashboard) do call :CHECK %%S
+for %%S in (ruang touchpad dashboard llm) do call :CHECK %%S
 
 call :SYNC
 timeout /t 60 /nobreak >nul
@@ -20,6 +20,7 @@ set SVC=%1
 set PORT=5173
 if "%SVC%"=="touchpad" set PORT=8000
 if "%SVC%"=="dashboard" set PORT=3000
+if "%SVC%"=="llm" set PORT=20128
 
 rem Cek tunnel masih ada
 curl -s -o nul -m 8 "https://TUNNELCHECK" 2>nul
@@ -54,12 +55,14 @@ set R3=
 for /f "tokens=*" %%U in ('grep -a -oE "https://[a-z0-9-]+\.trycloudflare\.com" "%LOGS%\cloudflared-ruang.log" 2^>nul ^| tail -n 1') do set R1=%%U
 for /f "tokens=*" %%U in ('grep -a -oE "https://[a-z0-9-]+\.trycloudflare\.com" "%LOGS%\cloudflared-touchpad.log" 2^>nul ^| tail -n 1') do set R2=%%U
 for /f "tokens=*" %%U in ('grep -a -oE "https://[a-z0-9-]+\.trycloudflare\.com" "%LOGS%\cloudflared-dashboard.log" 2^>nul ^| tail -n 1') do set R3=%%U
+for /f "tokens=*" %%U in ('grep -a -oE "https://[a-z0-9-]+\.trycloudflare\.com" "%LOGS%\cloudflared-llm.log" 2^>nul ^| tail -n 1') do set R4=%%U
 
 (
   echo {
   echo   "ruang": "!R1!",
   echo   "touchpad": "!R2!",
   echo   "dashboard": "!R3!",
+  echo   "llm": "!R4!",
   echo   "updated": "%DATE% %TIME%"
   echo }
 ) > "%OUT%"

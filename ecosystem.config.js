@@ -41,7 +41,11 @@ module.exports = {
       args: 'dev -p 3000',
       interpreter: 'C:\\Users\\ASUS\\AppData\\Local\\hermes\\tools\\node-26.7.0-win32-x64\\node.exe',
       interpreter_args: '--max-old-space-size=4096',
-      env: { PORT: '3000' },
+      env: {
+        PORT: '3000',
+        // WSS publik untuk akses touchpad dari luar (Cloudflare Tunnel ke :8000)
+        NEXT_PUBLIC_TOUCHPAD_WS: 'wss://lucas-norman-ipod-need.trycloudflare.com/ws',
+      },
       watch: false,
       autorestart: true,
       max_restarts: 10,
