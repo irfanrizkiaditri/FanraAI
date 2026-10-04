@@ -30,7 +30,7 @@ for /f "tokens=*" %%U in ('grep -a -oE "https://[a-z0-9-]+\.trycloudflare\.com" 
 
 if not defined URL (
   echo [%TIME%] %SVC%: tunnel mati, mulai ulang...
-  start "" /min "%CF%" tunnel --url http://localhost:%PORT% > "%LOGS%\cloudflared-%SVC%.log" 2>&1
+  start "" /min "%CF%" tunnel --url http://127.0.0.1:%PORT% > "%LOGS%\cloudflared-%SVC%.log" 2>&1
   timeout /t 20 /nobreak >nul
 ) else (
   rem Cek log terakhir ada error "not found"
@@ -38,7 +38,7 @@ if not defined URL (
     echo [%TIME%] %SVC%: tunnel expired, mulai ulang...
     taskkill /f /im cloudflared.exe >nul 2>&1
     timeout /t 2 /nobreak >nul
-    start "" /min "%CF%" tunnel --url http://localhost:%PORT% > "%LOGS%\cloudflared-%SVC%.log" 2>&1
+    start "" /min "%CF%" tunnel --url http://127.0.0.1:%PORT% > "%LOGS%\cloudflared-%SVC%.log" 2>&1
     timeout /t 20 /nobreak >nul
   )
 )
