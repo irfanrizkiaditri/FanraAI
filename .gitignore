@@ -67,6 +67,7 @@ package-lock.json
 
 # Local config (do not commit secrets)
 config.json
+pin.hash
 *.pem
 *.key
 *.crt

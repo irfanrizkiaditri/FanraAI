@@ -25,7 +25,7 @@ from typing import Optional
 import cv2
 import psutil
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pynput.mouse import Controller as MouseController, Button
@@ -56,6 +56,39 @@ _heartbeat_task: Optional[asyncio.Task] = None
 # Initialize mouse and keyboard controllers
 mouse = MouseController()
 keyboard = KeyboardController()
+
+# ==================== PIN Protection ====================
+# Hash PIN (SHA-256) disimpan di file terpisah, TIDAK di-commit ke git.
+# PIN asli tidak pernah disimpan di mana pun.
+PIN_HASH_FILE = Path("C:/Users/ASUS/FanraAi/pin.hash")
+
+
+def _load_pin_hash() -> str | None:
+    """Baca hash PIN dari file. Return None kalau proteksi dimatikan."""
+    try:
+        if PIN_HASH_FILE.exists():
+            return PIN_HASH_FILE.read_text(encoding="utf-8").strip().lower()
+    except Exception:
+        pass
+    return None
+
+
+def _verify_pin(pin: str | None) -> bool:
+    """True kalau PIN cocok atau proteksi dimatikan."""
+    expected = _load_pin_hash()
+    if expected is None:
+        return True  # tidak ada pin.hash = tidak ada proteksi
+    if not pin:
+        return False
+    import hashlib
+    return hashlib.sha256(pin.encode("utf-8")).hexdigest() == expected
+
+
+async def require_pin(x_pin: str | None = Header(default=None, alias="X-PIN")):
+    """Dependency FastAPI: tolak akses tanpa PIN yang benar."""
+    if not _verify_pin(x_pin):
+        raise HTTPException(status_code=401, detail="PIN salah atau tidak dikirim")
+
 
 def move_mouse(dx: float, dy: float):
     """Move mouse relatively"""
@@ -205,6 +238,11 @@ async def heartbeat_loop():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # Touchpad = akses kursor & keyboard langsung, wajib PIN.
+    # PIN dikirim via query: /ws?pin=1234
+    if not _verify_pin(websocket.query_params.get("pin")):
+        await websocket.close(code=1008, reason="PIN salah atau tidak dikirim")
+        return
     await manager.connect(websocket)
     conn_state = manager.active_connections[websocket]
     touch_state = conn_state["touch_state"]
@@ -468,7 +506,7 @@ def _get_local_ip() -> str | None:
 
 
 @app.get("/system")
-async def system_info():
+async def system_info(_: None = Depends(require_pin)):
     import platform
     import psutil
 
@@ -596,13 +634,13 @@ async def _write_clipboard(data: dict) -> None:
 
 
 @app.get("/clipboard")
-async def clipboard_get():
+async def clipboard_get(_: None = Depends(require_pin)):
     async with _clipboard_lock:
         return await _read_clipboard()
 
 
 @app.post("/clipboard")
-async def clipboard_set(request: Request):
+async def clipboard_set(_: None = Depends(require_pin)):
     try:
         body = await request.json()
     except Exception:
@@ -646,7 +684,7 @@ def _resolve(folder: str, name: str) -> Path | None:
 
 
 @app.get("/files/{folder}")
-async def files_list(folder: str):
+async def files_list(folder: str, _: None = Depends(require_pin)):
     base = ALLOWED_DIRS.get(folder)
     if base is None:
         return JSONResponse({"ok": False, "error": "Folder tidak diizinkan"}, status_code=403)
@@ -669,7 +707,7 @@ async def files_list(folder: str):
 
 
 @app.get("/files/{folder}/{name:path}")
-async def files_download(folder: str, name: str):
+async def files_download(folder: str, name: str, _: None = Depends(require_pin)):
     target = _resolve(folder, name)
     if target is None or not target.exists() or not target.is_file():
         return JSONResponse({"ok": False, "error": "File tidak ditemukan"}, status_code=404)
@@ -677,7 +715,7 @@ async def files_download(folder: str, name: str):
 
 
 @app.post("/files/{folder}")
-async def files_upload(folder: str, file: UploadFile = File(...)):
+async def files_upload(folder: str, _: None = Depends(require_pin)):
     base = ALLOWED_DIRS.get(folder)
     if base is None:
         return JSONResponse({"ok": False, "error": "Folder tidak diizinkan"}, status_code=403)
@@ -704,7 +742,7 @@ _kb = KeyboardController()
 
 
 @app.post("/media/{action}")
-async def media_control(action: str):
+async def media_control(action: str, _: None = Depends(require_pin)):
     """Aksi: play_pause, next, prev, vol_up, vol_down, mute."""
     keys = {
         "play_pause": Key.media_play_pause,
@@ -726,7 +764,7 @@ async def media_control(action: str):
 
 
 @app.get("/volume")
-async def volume_get():
+async def volume_get(_: None = Depends(require_pin)):
     """Baca volume saat ini (0-100). Butuh pycaw; kalau tidak ada tetap jalan."""
     try:
         from ctypes import cast, POINTER
@@ -748,7 +786,7 @@ SCREENSHOT_DIR = Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch")
 
 
 @app.get("/screenshot")
-async def screenshot():
+async def screenshot(_: None = Depends(require_pin)):
     try:
         from PIL import ImageGrab
 
@@ -789,7 +827,7 @@ _chat_lock = asyncio.Lock()
 
 
 @app.get("/chat-history")
-async def chat_history_get():
+async def chat_history_get(_: None = Depends(require_pin)):
     """Ambil seluruh riwayat chat."""
     async with _chat_lock:
         try:
@@ -802,7 +840,7 @@ async def chat_history_get():
 
 
 @app.post("/chat-history")
-async def chat_history_append(request: Request):
+async def chat_history_append(_: None = Depends(require_pin)):
     """Tambah satu pesan ke riwayat. Body: {"role": "user"|"assistant", "content": "..."}"""
     try:
         body = await request.json()
@@ -829,7 +867,7 @@ async def chat_history_append(request: Request):
 
 
 @app.delete("/chat-history")
-async def chat_history_clear():
+async def chat_history_clear(_: None = Depends(require_pin)):
     """Hapus seluruh riwayat."""
     async with _chat_lock:
         try:
@@ -840,7 +878,7 @@ async def chat_history_clear():
 
 
 @app.post("/tts")
-async def text_to_speech(request: Request):
+async def text_to_speech(_: None = Depends(require_pin)):
     """Body: {"text": "..."} -> audio/wav 24kHz mono."""
     try:
         body = await request.json()
@@ -872,7 +910,7 @@ async def text_to_speech(request: Request):
 
 # ==================== Task Manager ====================
 @app.get("/processes")
-async def list_processes():
+async def list_processes(_: None = Depends(require_pin)):
     """Daftar proses yang aktif, diurutkan berdasarkan RAM."""
     try:
         procs = []
@@ -894,7 +932,7 @@ async def list_processes():
 
 
 @app.post("/processes/kill")
-async def kill_process(request: Request):
+async def kill_process(_: None = Depends(require_pin)):
     """Hentikan proses berdasarkan PID. Body: {"pid": 1234}"""
     try:
         body = await request.json()
@@ -930,7 +968,7 @@ _terminal_cwd = str(Path.home())
 
 
 @app.post("/terminal")
-async def run_terminal(request: Request):
+async def run_terminal(_: None = Depends(require_pin)):
     """Jalankan command shell di laptop. Body: {"cmd": "..."}"""
     global _terminal_cwd
     try:
@@ -1007,8 +1045,43 @@ def _find_webcam_device():
     return None
 
 
+# ==================== Quick Actions ====================
+# Aksi cepat yang sering dipakai: lock laptop, buka aplikasi, restart service.
+# Semua aksi sudah didefinisikan di sini (tidak menerima command bebas),
+# jadi tidak bisa disalahgunakan untuk menjalankan apa pun.
+
+QUICK_ACTIONS: dict[str, list[str]] = {
+    # Kunci laptop (Windows)
+    "lock": ["rundll32.exe", "user32.dll,LockWorkStation"],
+    # Buka Explorer
+    "explorer": ["cmd.exe", "/c", "explorer.exe"],
+    # Buka browser default
+    "browser": ["cmd.exe", "/c", "start", ""],
+    # Buka Pengaturan Windows
+    "settings": ["cmd.exe", "/c", "start", "ms-settings:"],
+    # Restart touchpad server (PM2)
+    "restart-touchpad": ["cmd.exe", "/c", "npx pm2 restart touchpad"],
+}
+
+
+@app.post("/quick-action/{name}")
+async def quick_action(name: str, _: None = Depends(require_pin)):
+    """Jalankan aksi cepat yang sudah didefinisikan. Aksi bebas ditolak."""
+    args = QUICK_ACTIONS.get(name)
+    if args is None:
+        return JSONResponse(
+            {"ok": False, "error": f"Aksi tidak dikenal: {name}"},
+            status_code=400,
+        )
+    try:
+        subprocess.Popen(args, close_fds=True)
+        return {"ok": True, "action": name}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
 @app.get("/webcam")
-async def webcam_snapshot():
+async def webcam_snapshot(_: None = Depends(require_pin)):
     """Ambil satu frame dari webcam laptop."""
     async with _webcam_lock:
         tmp = Path("C:/Users/ASUS/AppData/Local/hermes/cache/scratch/webcam.jpg")
