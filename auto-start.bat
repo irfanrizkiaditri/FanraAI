@@ -12,7 +12,8 @@ rem Tunggu network siap
 timeout /t 10 /nobreak >nul
 call "%~dp0start-tunnels.bat"
 timeout /t 25 /nobreak >nul
-call "%~dp0sync-tunnels.bat"
+rem sync-tunnels dijalankan PM2 (sync-tunnels.py) - tanpa window console
+rem call "%~dp0sync-tunnels.bat"
 
 echo [1/6] Starting PM2 daemon...
 pm2 resurrect 2>nul || echo "No saved PM2 processes, starting fresh..."

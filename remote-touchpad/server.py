@@ -32,6 +32,14 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pynput.mouse import Controller as MouseController, Button
 from pynput.keyboard import Controller as KeyboardController, Key
 
+# Windows: sembunyikan window console hitam saat spawn subprocess
+# (CREATE_NO_WINDOW = 0x08000000). Tanpa ini, cmd.exe/netsh yang dipanggil
+# lewat endpoint bisa kebuka-tutup cepat di layar dan mengganggu.
+if sys.platform == "win32":
+    _SUBPROCESS_FLAGS = 0x08000000  # CREATE_NO_WINDOW
+else:
+    _SUBPROCESS_FLAGS = 0
+
 # ==================== Load Config ====================
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -474,6 +482,7 @@ def _get_wifi_ssid() -> str | None:
         r = subprocess.run(
             ["netsh", "wlan", "show", "interfaces"],
             capture_output=True, text=True, timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if r.returncode != 0:
             return None
@@ -1012,6 +1021,7 @@ async def run_terminal(request: Request, _: None = Depends(require_pin)):
             text=True,
             timeout=30,
             shell=False,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         output = (result.stdout or "") + (result.stderr or "")
         if not output:
@@ -1075,7 +1085,7 @@ async def quick_action(name: str, _: None = Depends(require_pin)):
             status_code=400,
         )
     try:
-        subprocess.Popen(args, close_fds=True)
+        subprocess.Popen(args, close_fds=True, creationflags=_SUBPROCESS_FLAGS)
         return {"ok": True, "action": name}
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
@@ -1204,6 +1214,7 @@ async def send_notify(request: Request, _: None = Depends(require_pin)):
             capture_output=True,
             text=True,
             timeout=25,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if proc.returncode != 0:
             return JSONResponse(
@@ -1347,7 +1358,8 @@ def start_server(background: bool = False) -> bool:
             cwd=Path(__file__).parent,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            start_new_session=True
+            start_new_session=True,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         write_pid(proc.pid)
         # Wait a moment and verify
