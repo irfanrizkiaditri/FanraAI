@@ -17,7 +17,7 @@ goto LOOP
 
 :CHECK
 set SVC=%1
-set PORT=5173
+set PORT=3001
 if "%SVC%"=="touchpad" set PORT=8000
 if "%SVC%"=="dashboard" set PORT=3001
 if "%SVC%"=="llm" set PORT=20128
