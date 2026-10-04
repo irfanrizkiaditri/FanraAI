@@ -14,6 +14,7 @@ Lifecycle commands:
 import asyncio
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -640,7 +641,7 @@ async def clipboard_get(_: None = Depends(require_pin)):
 
 
 @app.post("/clipboard")
-async def clipboard_set(_: None = Depends(require_pin)):
+async def clipboard_set(request: Request, _: None = Depends(require_pin)):
     try:
         body = await request.json()
     except Exception:
@@ -840,7 +841,7 @@ async def chat_history_get(_: None = Depends(require_pin)):
 
 
 @app.post("/chat-history")
-async def chat_history_append(_: None = Depends(require_pin)):
+async def chat_history_append(request: Request, _: None = Depends(require_pin)):
     """Tambah satu pesan ke riwayat. Body: {"role": "user"|"assistant", "content": "..."}"""
     try:
         body = await request.json()
@@ -878,7 +879,7 @@ async def chat_history_clear(_: None = Depends(require_pin)):
 
 
 @app.post("/tts")
-async def text_to_speech(_: None = Depends(require_pin)):
+async def text_to_speech(request: Request, _: None = Depends(require_pin)):
     """Body: {"text": "..."} -> audio/wav 24kHz mono."""
     try:
         body = await request.json()
@@ -932,7 +933,7 @@ async def list_processes(_: None = Depends(require_pin)):
 
 
 @app.post("/processes/kill")
-async def kill_process(_: None = Depends(require_pin)):
+async def kill_process(request: Request, _: None = Depends(require_pin)):
     """Hentikan proses berdasarkan PID. Body: {"pid": 1234}"""
     try:
         body = await request.json()
@@ -968,7 +969,7 @@ _terminal_cwd = str(Path.home())
 
 
 @app.post("/terminal")
-async def run_terminal(_: None = Depends(require_pin)):
+async def run_terminal(request: Request, _: None = Depends(require_pin)):
     """Jalankan command shell di laptop. Body: {"cmd": "..."}"""
     global _terminal_cwd
     try:
@@ -1078,6 +1079,143 @@ async def quick_action(name: str, _: None = Depends(require_pin)):
         return {"ok": True, "action": name}
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+# ==================== Now Playing (media yang sedang diputar) ====================
+# Baca judul lagu/video yang sedang play di Brave via title window aktif.
+# Cara: cari process brave yang punya window title (judul tab YouTube/TikTok/dll).
+
+NOW_PLAYING_RE = re.compile(r"^(.+?)\s*[-–—]\s*(.+?)\s*[-–—]\s*(.+?)$")
+
+
+def _get_brave_titles() -> list[str]:
+    """Ambil judul window Brave (judul tab aktif).
+
+    Pakai ctypes murni (win32gui/pywin32 tidak terpasang di interpreter PM2).
+    Deteksi dari akhiran " - Brave" di judul window.
+    """
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+        titles: list[str] = []
+
+        def _enum(hwnd: int, _lparam: int) -> bool:
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            length = user32.GetWindowTextLengthW(hwnd)
+            if length <= 0:
+                return True
+            buf = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buf, length + 1)
+            if buf.value and buf.value.endswith(" - Brave"):
+                titles.append(buf.value)
+            return True
+
+        user32.EnumWindows(WNDENUMPROC(_enum), 0)
+        return titles
+    except Exception:
+        return []
+
+
+def _parse_title(title: str) -> dict[str, str | None]:
+    """Ubah judul tab browser jadi {title, artist, source}.
+
+    Format umum: "Artist - Title - YouTube" / "Title - TikTok" / "Artist - Title - Brave"
+    """
+    source = None
+    for src in ("YouTube", "TikTok", "Instagram", "Spotify", "SoundCloud", "Twitch", "Netflix"):
+        if src in title:
+            source = src
+            title = title.replace(f" - {src}", "").replace(f" {src}", "").strip()
+            break
+
+    # strip akhiran " - Brave" / "Video Musik Resmi" / "Official Music Video"
+    title = re.sub(r"\s*[-–—]\s*Brave\s*$", "", title).strip()
+    title = re.sub(r"\s*\((?:Official|Video Musik Resmi|Resmi|Lyric|Audio|Official Music Video)[^)]*\)\s*$", "", title, flags=re.IGNORECASE).strip()
+
+    m = NOW_PLAYING_RE.match(title)
+    if m:
+        # "Artist - Title - sisa" -> ambil 2 pertama
+        parts = re.split(r"\s*[-–—]\s*", title)
+        if len(parts) >= 2:
+            return {"title": parts[1].strip(), "artist": parts[0].strip(), "source": source}
+    return {"title": title or None, "artist": None, "source": source}
+
+@app.get("/now-playing")
+async def now_playing(_: None = Depends(require_pin)):
+    """Lagu/video yang sedang diputar di Brave (berdasarkan judul tab)."""
+    titles = _get_brave_titles()
+    if not titles:
+        return {"ok": True, "playing": False, "title": None, "artist": None, "source": None}
+
+    # Cari yang mengandung indikator media
+    media_titles = [t for t in titles if any(s in t for s in ("YouTube", "TikTok", "Spotify", "SoundCloud", "Twitch"))]
+    if not media_titles:
+        return {"ok": True, "playing": False, "title": None, "artist": None, "source": None}
+
+    info = _parse_title(media_titles[0])
+    return {"ok": True, "playing": True, **info}
+
+
+# ==================== Notifikasi Telegram ====================
+# Kirim notifikasi ke Telegram user via `hermes send` (aman, pakai gateway
+# yang sudah terkonfigurasi, tanpa token tambahan).
+
+TELEGRAM_CHAT_ID = "6105000024"
+HERMES_BIN = str(Path("C:/Users/ASUS/AppData/Local/hermes/bin/hermes.exe"))
+_last_notify: dict[str, float] = {}
+NOTIFY_COOLDOWN = 300.0  # 5 menit per topik
+
+
+@app.post("/notify")
+async def send_notify(request: Request, _: None = Depends(require_pin)):
+    """Kirim notifikasi ke Telegram. Body: {"topic": "...", "message": "..."}.
+
+    Cooldown 5 menit per topik biar tidak spam.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Body bukan JSON valid"}, status_code=400)
+
+    topic = str(body.get("topic", "")).strip() or "Umum"
+    message = str(body.get("message", "")).strip()
+    if not message:
+        return JSONResponse({"ok": False, "error": "Pesan tidak boleh kosong"}, status_code=400)
+    if len(message) > 1000:
+        return JSONResponse({"ok": False, "error": "Pesan terlalu panjang (maks 1000 karakter)"}, status_code=400)
+
+    # Cooldown per topik
+    now = time.time()
+    if now - _last_notify.get(topic, 0) < NOTIFY_COOLDOWN:
+        return {"ok": True, "skipped": True, "reason": "Cooldown"}
+
+    if not Path(HERMES_BIN).exists():
+        return JSONResponse(
+            {"ok": False, "error": "Hermes CLI tidak ditemukan"},
+            status_code=500,
+        )
+
+    try:
+        proc = subprocess.run(
+            [HERMES_BIN, "send", "-t", f"telegram:{TELEGRAM_CHAT_ID}", "-q", message],
+            capture_output=True,
+            text=True,
+            timeout=25,
+        )
+        if proc.returncode != 0:
+            return JSONResponse(
+                {"ok": False, "error": (proc.stderr or "Gagal kirim").strip()[:200]},
+                status_code=502,
+            )
+        _last_notify[topic] = now
+        return {"ok": True, "skipped": False}
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"ok": False, "error": "Timeout kirim notifikasi"}, status_code=504)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)[:200]}, status_code=500)
 
 
 @app.get("/webcam")
