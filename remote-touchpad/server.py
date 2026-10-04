@@ -427,6 +427,46 @@ async def health():
 # ==================== System Monitor ====================
 # Dipakai portal FanraAi (Vercel) untuk tampilkan baterai, RAM, CPU, uptime
 # laptop Irfan. CORS allow_origins ["*"] wajib supaya bisa di-fetch cross-origin.
+
+
+def _get_wifi_ssid() -> str | None:
+    """Ambil nama WiFi yang sedang terhubung (Windows: netsh)."""
+    try:
+        r = subprocess.run(
+            ["netsh", "wlan", "show", "interfaces"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return None
+        for line in r.stdout.splitlines():
+            line = line.strip()
+            if line.startswith("SSID"):
+                # "SSID : nama" atau "SSID 1 : nama"
+                parts = line.split(":", 1)
+                if len(parts) == 2:
+                    val = parts[1].strip()
+                    # "BSSID ..." juga match, lewati
+                    if val and "BSSID" not in line.upper().split(":")[0]:
+                        return val
+        return None
+    except Exception:
+        return None
+
+
+def _get_local_ip() -> str | None:
+    """IP lokal di jaringan saat ini (bukan 127.0.0.1)."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return None
+
+
 @app.get("/system")
 async def system_info():
     import platform
@@ -471,6 +511,48 @@ async def system_info():
     except Exception:
         uptime_s = None
 
+    # Penyimpanan (semua partisi)
+    try:
+        disks = []
+        for part in psutil.disk_partitions(all=False):
+            try:
+                usage = psutil.disk_usage(part.mountpoint)
+                disks.append({
+                    "mount": part.mountpoint,
+                    "device": part.device,
+                    "total_gb": round(usage.total / (1024**3), 1),
+                    "used_gb": round(usage.used / (1024**3), 1),
+                    "free_gb": round(usage.free / (1024**3), 1),
+                    "percent": round(usage.percent),
+                })
+            except (PermissionError, OSError):
+                continue
+    except Exception:
+        disks = []
+
+    # Suhu CPU (Windows jarang ada, coba dulu)
+    try:
+        temps = []
+        for name, entries in (psutil.sensors_temperatures() or {}).items():
+            for e in entries[:2]:
+                temps.append({"label": e.label or name, "current": e.current})
+        temps = temps[:4]
+    except Exception:
+        temps = []
+
+    # Jaringan: WiFi + interface aktif
+    try:
+        import socket
+        net = {
+            "wifi_ssid": _get_wifi_ssid(),
+            "local_ip": _get_local_ip(),
+            "bytes_sent_mb": round(psutil.net_io_counters().bytes_sent / (1024**2), 1),
+            "bytes_recv_mb": round(psutil.net_io_counters().bytes_recv / (1024**2), 1),
+        }
+    except Exception:
+        net = {"wifi_ssid": None, "local_ip": None,
+               "bytes_sent_mb": None, "bytes_recv_mb": None}
+
     return {
         "hostname": platform.node(),
         "os": f"{platform.system()} {platform.release()}",
@@ -482,16 +564,19 @@ async def system_info():
         "ram": ram,
         "battery": batt,
         "uptime_s": uptime_s,
+        "disks": disks,
+        "temps": temps,
+        "net": net,
         "ts": int(time.time()),
     }
 
 
 
 # ==================== Clipboard Sync ====================
-# Sinkron teks antara HP (portal) dan laptop. Disimpan di memori + file
-# (clipboard.json) supaya tidak hilang saat server restart.
 CLIPBOARD_FILE = Path(__file__).parent / "clipboard.json"
 _clipboard_lock = asyncio.Lock()
+# Sinkron teks antara HP (portal) dan laptop. Disimpan di memori + file
+# (clipboard.json) supaya tidak hilang saat server restart.
 
 
 async def _read_clipboard() -> dict:
