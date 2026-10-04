@@ -19,7 +19,7 @@ goto LOOP
 set SVC=%1
 set PORT=5173
 if "%SVC%"=="touchpad" set PORT=8000
-if "%SVC%"=="dashboard" set PORT=3000
+if "%SVC%"=="dashboard" set PORT=3001
 if "%SVC%"=="llm" set PORT=20128
 
 rem Cek tunnel masih ada

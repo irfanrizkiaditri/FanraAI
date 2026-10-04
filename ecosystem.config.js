@@ -66,11 +66,11 @@ module.exports = {
       name: 'touchpad-dashboard',
       cwd: 'C:\\Users\\ASUS\\FanraAi\\touchpad-dashboard',
       script: 'C:\\Users\\ASUS\\FanraAi\\touchpad-dashboard\\node_modules\\next\\dist\\bin\\next',
-      args: 'dev -p 3000',
+      args: 'dev -p 3001',
       interpreter: 'C:\\Users\\ASUS\\AppData\\Local\\hermes\\tools\\node-26.7.0-win32-x64\\node.exe',
       interpreter_args: '--max-old-space-size=4096',
       env: {
-        PORT: '3000',
+        PORT: '3001',
         // WSS publik untuk akses touchpad dari luar (Cloudflare Tunnel ke :8000)
         NEXT_PUBLIC_TOUCHPAD_WS: 'wss://lucas-norman-ipod-need.trycloudflare.com/ws',
       },

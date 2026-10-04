@@ -10,7 +10,7 @@ start "fanra-tunnel-ruang" /min "" "%CF%" tunnel --url http://localhost:5173 > "
 timeout /t 3 /nobreak >nul
 start "fanra-tunnel-touchpad" /min "" "%CF%" tunnel --url http://localhost:8000 > "%LOGS%\cloudflared-touchpad.log" 2>&1
 timeout /t 3 /nobreak >nul
-start "fanra-tunnel-dashboard" /min "" "%CF%" tunnel --url http://localhost:3000 > "%LOGS%\cloudflared-dashboard.log" 2>&1
+start "fanra-tunnel-dashboard" /min "" "%CF%" tunnel --url http://localhost:3001 > "%LOGS%\cloudflared-dashboard.log" 2>&1
 timeout /t 3 /nobreak >nul
 start "fanra-tunnel-llm" /min "" "%CF%" tunnel --url http://localhost:20128 > "%LOGS%\cloudflared-llm.log" 2>&1
 
